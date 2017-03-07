@@ -1,0 +1,3 @@
+simplejson
+scipy
+mpi4py

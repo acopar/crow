@@ -1,0 +1,5 @@
+pycuda
+scikit-cuda
+cffi
+git+https://github.com/grlee77/python-cuda-cffi
+zmq

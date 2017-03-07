@@ -1,0 +1,21 @@
+#!/bin/bash
+
+SOURCE_DIR=$PWD/crow
+DATA_DIR=$PWD/../data
+CACHE_DIR=$PWD/../cache
+RESULTS_DIR=$PWD/results
+NVIDIA_VOL='nvidia_driver_367.57'
+docker run -v ${SOURCE_DIR}:/home/mpirun/crow  \
+             -v ${DATA_DIR}:/home/mpirun/data:ro \
+             -v ${CACHE_DIR}:/home/mpirun/cache \
+             -v ${RESULTS_DIR}:/home/mpirun/results \
+             -v ${NVIDIA_VOL}:/usr/local/nvidia \
+             --device /dev/nvidia0 \
+             --device /dev/nvidia1 \
+             --device /dev/nvidia2 \
+             --device /dev/nvidia3 \
+             --device /dev/nvidia4 \
+             --device /dev/nvidia5 \
+             --device /dev/nvidiactl \
+             --device /dev/nvidia-uvm \
+             --rm -it acopar/crow /bin/bash
