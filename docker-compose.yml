@@ -1,0 +1,18 @@
+version: '2'
+
+services:
+    head:
+        image: acopar/crow
+        ports: 
+            - "22"
+        volumes:
+            - ./crow:/home/mpirun/crow
+            - ../data:/home/mpirun/data:ro
+            - ../cache:/home/mpirun/cache
+            - ./results:/home/mpirun/results
+        networks:
+            - crownet
+
+networks:
+    crownet:
+        driver: bridge
