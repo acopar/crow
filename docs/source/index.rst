@@ -3,13 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to crow's documentation!
+Welcome to crow documentation!
 ================================
+Crow is a multi-GPU and multi-CPU implementation of non-negative matrix tri-factorization.
+
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   install
+   docker
+   manual
+   tutorial
+   reference
 
 
 Indices and tables
