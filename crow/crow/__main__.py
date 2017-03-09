@@ -31,20 +31,23 @@ def mpiexec(rank, params):
 
 def main():
     parser = argparse.ArgumentParser(version=VERSION, description='Crow')
-    parser.add_argument("-g", "--gpu", help="Run on GPU", action="store_true")
-    parser.add_argument("-s", "--sparse", help="Run sparse", action="store_true")
-    parser.add_argument("-e", "--error", help="Error function", action="store_true")
-    parser.add_argument("-a", "--arguments", default='k=10', help='Add arguments in key=value pairs separated with commas')
-    parser.add_argument("-r", "--rulefile", help="Rule filename", default='')
+    parser.add_argument("-a", "--arguments", default='', help='Add arguments in key=value pairs separated with commas')
     parser.add_argument("-b", "--blocks", help="Block configuration", default='1x1')
-    parser.add_argument("-i", "--max-iter", type=int, default=10, help='Number of iterations')
-    parser.add_argument("-o", "--output", default=None, help='Result file')
+    parser.add_argument("-e", "--error", help="Error function", action="store_true")
     parser.add_argument("-f", "--force", help='Force all steps', action="store_true")
-    parser.add_argument("-n", "--init", help="Initialization", default='random')
-    parser.add_argument("-m", "--imbalanced", help="Imbalanced partitioning", action="store_true")
+    parser.add_argument("-g", "--gpu", help="Run on GPU", action="store_true")
+    parser.add_argument("-i", "--max-iter", type=int, default=10, help='Number of iterations')
+    parser.add_argument("--k1", default=None, help='First rank value')
+    parser.add_argument("--k2", default=None, help='Second rank value')
     
+    parser.add_argument("-m", "--imbalanced", help="Imbalanced partitioning", action="store_true")
+    parser.add_argument("-n", "--init", help="Initialization", default='random')
+    parser.add_argument("-o", "--orthogonal", help='Run with orthogonal constraints', action="store_true")
     # do not specify unless different from blocks
     parser.add_argument("-p", "--parallel", type=int, default=None, help='Parallelization degree')
+    parser.add_argument("-s", "--sparse", help="Run sparse", action="store_true")
+    #parser.add_argument("-r", "--rulefile", help="Rule filename", default='')
+    parser.add_argument("-t", "--stop", help='Stopping criteria', default='')
     
     # Debugging flags
     parser.add_argument("-V", "--Verbose", help='Verbosity', action="store_true")
@@ -66,10 +69,23 @@ def main():
     if args.gpu == True:
         context = 'gpu'
     
-    params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'arguments': args.arguments, 
-        'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': args.rulefile, 
+    rulefile = 'nmtf_long'
+    if args.orthogonal:
+        rulefile = 'nmtf_ding'
+    
+    arguments = args.arguments
+    if arguments == '':
+        if args.k1 != None:
+            arguments = 'k=%s' % args.k1
+            if args.k2 != None:
+                arguments = '%s,l=%s' % (arguments, args.k2)
+        else:
+            arguments = 'k=10'
+    
+    params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'arguments': arguments, 
+        'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': rulefile, 
         'init': args.init, 'unbalanced': args.imbalanced, 'verbose': args.Verbose, 'force': args.force,
-        'data_file': data_file, 'output_folder': args.output_folder}
+        'data_file': data_file, 'stop': args.stop}
     
     run_wrapper(params)
 
@@ -93,7 +109,7 @@ def run_wrapper(params, merge=True):
         'multiplier': 1, 'error': True, 'override': False, 'debug': None, 'test': False, 'unbalanced': False,
         'data_folder': data_folder, 'data_file': data_file, 'factor_folder': factor_folder, 
         'results_folder': results_folder, 'output_folder': output_folder, 'factor_cache': factor_cache,
-        'blockmap_file': blockmap_file
+        'blockmap_file': blockmap_file, 'stop': ''
     }
     
     params = from_template(template, params)
@@ -125,8 +141,9 @@ def get_config(params):
         if params['parallel'] > 1 and params['sparse']:
             unbalanced = True
     
-    d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': 0, 'unbalanced': unbalanced, 'init': params['init'],
-        'parallel': params['parallel'], 'context': context, 'multiplier': params['multiplier']}
+    d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': 0, 
+        'unbalanced': unbalanced, 'init': params['init'], 'parallel': params['parallel'], 
+        'context': context, 'multiplier': params['multiplier']}
     return d
 
 def data_cache_module(params):
