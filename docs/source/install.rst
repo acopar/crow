@@ -8,26 +8,92 @@ Setup guide
 
 We recommend building and running CROW with docker to avoid recompiling libraries manually. If you want to install on host server directly, follow the :ref:`Manual setup <manual>`.
 
-Install requirements:
+Docker install requirements for all environments:
 
 * `docker >= 1.12.9 <https://docs.docker.com/engine/installation>`_
 * `docker-compose >= 1.9.0 <https://docs.docker.com/compose/install/>`_
+
+Requirements for GPU environments:
+
+* `CUDA >= 8.0 <https://developer.nvidia.com/cuda-downloads>`_
 * `nvidia-docker >= 1.0.0 <https://github.com/NVIDIA/nvidia-docker>`_
 * `nvidia-docker-compose <https://github.com/eywalker/nvidia-docker-compose>`_
 
 If you don't have these programs installed, follow the :ref:`quick requirements installation <docker>` or links above for setup instructions on various platforms.
 
 
-Move to directory containing Dockerfile and build the container with nvidia-docker-compose.
+After you have installed the requirements, clone `crow git repository <https://github.com/acopar/crow>`_.
 
 ::
     
-    nvidia-docker-compose build
+    git clone https://github.com/acopar/crow
+    cd crow
+
+
+Configuration
+-------------
+
+Crow docker images makes use of the following external volumes. 
+
+* crow: path to the crow source code 
+* data: path to directory with data, mounted read-only.
+* results: this is where the factorized data will be stored.
+* cache: path to directory, where the application stores intermediate files. Starting with empty folder, the cache can take several gigabytes, depending on your data so make sure that you have enough space on the partition. You can safely clean this folder, but note that it may take some time to process the data again. 
+
+Open the ``docker-compose.yml`` directory and make sure that the mount directories point to the desired locations. By default, mount points for each volume points to a folder in the current working directory. You can use symbolic links to connect path to your data, like this:
+
+::
+
+    ln -s <path-to-your-data-folder> data
+    mkdir results
+    mkdir -p ../tmp/crow-cache
+    ln -s ../tmp/crow-cache cache
+
+Alternatively, change ``docker-compose.yml`` to point to the desired locations, for example:
+
+::
+
+    - ./crow:/home/mpirun/crow
+    - /mnt/data:/home/mpirun/data:ro
+    - ../tmp/crow-cache:/home/mpirun/cache
+    - ./results:/home/mpirun/results
+
+
+Start containers
+----------------
+
+
+For GPU environments start the container with ``nvidia-docker-compose``. 
+
+::
+    
+    nvidia-docker-compose up
     docker volume create --name=nvidia_driver_367.57
 
 
-Once inside docker container, you can call the application to compute NMTF.
+For CPU only install, use ``docker-compose`` directly.
 
+::
+    
+    docker-compose up
+
+
+
+Once the container is running, you can attach to it with the following command:
+
+::
+    
+    docker exec -it crow_head_1 /bin/bash
+    
+
+Alternatively, you can connect to the container with ssh.
+
+::
+
+    ssh -p <container port> mpirun@localhost
+
+
+Once inside docker the container, follow the :ref:`Tutorial <tutorial>` to start using NMTF. 
 
 
 
