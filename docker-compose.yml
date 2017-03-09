@@ -7,8 +7,8 @@ services:
             - "22"
         volumes:
             - ./crow:/home/mpirun/crow
-            - ../data:/home/mpirun/data:ro
-            - ../cache:/home/mpirun/cache
+            - ./data:/home/mpirun/data:ro
+            - ./cache:/home/mpirun/cache
             - ./results:/home/mpirun/results
         networks:
             - crownet

@@ -5,13 +5,29 @@ A scalable implementation of non-negative matrix tri-factorization for multi-pro
 ### Quick Setup ###
 -------------------
 
-The most convenient way to setup the environment is to use provided docker images. Refer to the [Online documentation](https://crow.readthedocs.io/crow) for complete instructions. 
+The most convenient way to setup the environment is to use provided docker images. Refer to the [Online documentation](https://crow.readthedocs.io/) for detailed explanation on how to setup your environment. Here is a quick setup guide.
 
+#### CPU-only version
+
+First, clone the crow source repository.
 ```sh
-    docker pull acopar/crow:latest
+    git clone https://github.com/acopar/crow crow
+    cd crow
+    nvidia-docker-compose up
 ```
 
-Crow docker images makes use of the following external volumes. 
+#### GPU-enabled version
+
+First, clone the crow source repository.
+```sh
+    git clone https://github.com/acopar/crow crow
+    cd crow
+    docker-compose up
+```
+
+#### Docker volumes
+
+Crow docker images makes use of the following external volumes:
 - crow: path to the crow source code 
 - data: path to directory with data, mounted read-only.
 - cache: path to directory, where the application stores intermediate files. 
@@ -19,14 +35,9 @@ Note that cache can take several gigabytes, depending on your data. You can
 safely clean this folder, but note that it may take some time to process the data again. 
 - results: this is where the factorized data will be stored.
 
-#### Using nvidia-docker-compose
+You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose tries to connect the volumes in current directory. Therefore, you can also use symbolic links and point to the directory where you want to store data, cache or results.
 
-First, clone the crow source repository.
-```sh
-    git clone https://github.com/acopar/crow crow
-    cd crow
-```
-In the same directory as docker-compose.yml create links to other folders.
+You can do this by creating symbolic links or in the same directory as docker-compose.yml, for example:
 ```sh
     ln -s <path-to-your-data-folder> data
     mkdir /tmp/crow-cache
@@ -34,6 +45,7 @@ In the same directory as docker-compose.yml create links to other folders.
     mkdir results
 ```
 
+After you changed volume paths, you need to call docker-compose again.
 ```sh
     docker volume create --name=nvidia_driver_367.57
     nvidia-docker-compose up
@@ -47,16 +59,16 @@ Now, you can connect to the running docker container:
     docker exec --it crow_head_1 /bin/bash
 ```
 
-Alternatively, you can ssh into the container, you just need to check the ssh port with `docker ps`.
+Alternatively, you can ssh into the container, you just need to check the correct ssh port with `docker ps`.
 
 ```
     ssh -p <container-ssh-port> mpirun@localhost
 ```
 
-#### Run docker manually
+#### Run docker standalone
 
-If you run docker container as standalone application, instead of using docker-compose, 
-you need to provide path to external volumes manually. 
+If you run docker container as standalone application, instead of using `docker-compose`, 
+you need to provide path to external volumes manually. For GPU-enabled version refer to the `nvidia-docker-compose.yml` file (which is generated after initial `nvidia-docker-compose`) and provide all volumes and devices from command line. 
 
 ```sh
    docker run -v <source-dir>:/home/mpirun/crow 
@@ -85,7 +97,7 @@ For example, consider this 2D matrix:
 ```
 Corresponding data file would look like this:
 ```
-    
+    2,3
     0,0,1
     1,0,5
     1,1,5

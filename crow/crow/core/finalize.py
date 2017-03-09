@@ -2,6 +2,7 @@ import os
 import numpy as np
 from crow.utils import *
 from crow.config import *
+from crow.convert.csv import *
 
 def merge_and_test(params):
     factor_folder = params['factor_folder']
@@ -61,25 +62,17 @@ def merge_and_test(params):
         new_factors[key] = X
     
     dump_file(ffile, (dimensions, new_factors))
+    factordict_to_csv(ffile)
     measure_error(params)
 
-def convert_to_csv(ffile):
-    dimensions, new_factors = load_file(ffile)
+
+def factordict_to_csv(filename):
+    dimensions, new_factors = load_file(filename)
     for key in new_factors:
         factor = new_factors[key]
         filename = to_path(RESULTS, '%s.csv' % key)
-        dump_factor(filename, factor)
+        write_csv(filename, factor)
 
-
-def dump_factor(filename, factor):
-    fp = open(filename, 'w')
-    writer = csv.writer(fp, delimiter=',')
-    for i in range(n):
-        for j in range(m):
-            x = factor[i,j]
-            if x != 0:
-                writer.writerow([i,j,x])
-    fp.close()
 
 def measure_error(params):
     cache_folder = params['data_folder']
