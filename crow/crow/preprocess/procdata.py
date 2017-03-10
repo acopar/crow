@@ -8,6 +8,7 @@ import csv
 import numpy as np
 from scipy.sparse import csr_matrix
 
+from crow.convert.csv import load_coo, load_coo_sparse
 from crow.utils import *
 
 def dummy_partition(X, nb, mb):
@@ -94,83 +95,12 @@ def unbalanced_slicing(input_file, output_folder, blocks=[]):
 
 
 def csv_tosparse_fast(filename, pklname):
-    fp = open(filename, 'r')
-    reader = csv.reader(fp, delimiter=',')
-    meta = reader.next()
-    N = int(meta[0])
-    M = int(meta[1])
-    
-    rows = []
-    cols = []
-    vals = []
-    
-    n = 0
-    m = 0
-    
-    tz = time.time()
-    it = 0
-    for line in reader:
-        if it > 1 and it % 5000000 == 0:
-            print "Progress %dM" % (it / 1000000)
-        i, j, r = int(line[0]), int(line[1]), float(line[2])
-        if r < 0:
-            r = 0
-        if i > n:
-            n = i
-        if j > m:
-            m = j
-        rows.append(i)
-        cols.append(j)
-        vals.append(r)
-        it += 1
-    
-    fp.close()
-    n = n+1
-    m = m+1
-
-    print N, n
-    print M, m
-    
-    n, m = N, M
-    
-    t0 = time.time()
-    print 'Read in: ', t0-tz
-    data = np.array(vals, dtype=np.float32)
-    X = csr_matrix((vals,(rows,cols)),shape=(n, m),dtype=np.float32)
-    t1 = time.time()
-    print 'Constructed in: ', t1-t0
-    
+    X = load_coo_sparse(filename, verbose=True)
     save_numpy(pklname, X)
-    t2 = time.time()
-    print 'Dumped in: ', t2-t1
-
+    
 def csv_todense(filename, pklname):
-    fp = open(filename, 'r')
-    reader = csv.reader(fp, delimiter=',')
-    meta = reader.next()
-    n = int(meta[0])
-    m = int(meta[1])
-    
-    t0 = time.time()
-    X = np.zeros((n,m), dtype=np.float32)
-    it = 0
-    for line in reader:
-        if it > 1 and it % 5000000 == 0:
-            print "Progress %dM" % (it / 1000000)
-        i, j, r = int(line[0]), int(line[1]), float(line[2])
-        if r < 0:
-            r = 0
-        X[i,j] = r
-        it += 1
-    
-    fp.close()
-    t1 = time.time()
-    print 'Constructed in: ', t1-t0
-    print pklname, X.shape
+    load_coo(filename, verbose=True)
     save_numpy(pklname, X)
-    t2 = time.time()
-    print 'Dumped in: ', t2-t1
-    
 
 def dense_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)]):
     pkl_sparse = to_path(data_folder, '1_1', '0_0.npz')
@@ -197,39 +127,6 @@ def dataset_to_blocks(data_file, cache_folder, blocks=[(2,1),(4,1)], sparse=Fals
     else:
         return sparse_dataset_to_blocks(data_file, cache_folder, blocks=blocks, balanced=balanced)
 
-def csv_to_bio(data_file, output_file):
-    fp = open(data_file, 'r')
-    reader = csv.reader(fp, delimiter=',')
-    meta = reader.next()
-    n = int(meta[0])
-    m = int(meta[1])
-    
-    t0 = time.time()
-    X = np.zeros((n,m), dtype=np.float32)
-    it = 0
-    for line in reader:
-        if it > 1 and it % 5000000 == 0:
-            print "Progress %dM" % (it / 1000000)
-        i, j, r = int(line[0]), int(line[1]), float(line[2])
-        if r < 0:
-            r = 0
-        X[i,j] = r
-        it += 1
-    
-    fp.close()
-    t1 = time.time()
-    print 'Constructed in: ', t1-t0
-    
-    fp = open(output_file, 'w')
-    writer = csv.writer(fp, delimiter='\t')
-    
-    for i in range(n):
-        writer.writerow(X[i,:])
-    
-    fp.close()
-    
-    t2 = time.time()
-    print 'Dumped in: ', t2-t1
 
 def test(data_file):
     csv_dataset_to_blocks(data_file)
@@ -239,6 +136,3 @@ if __name__ == "__main__":
     if len(args) != 2:
         print "Provide path to one data file and one output file"
         sys.exit()
-    data_file = args[0]
-    output_file = args[1]
-    csv_to_bio(data_file, output_file)
