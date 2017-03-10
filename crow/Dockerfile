@@ -11,6 +11,9 @@ RUN tar xzf openmpi-2.0.0.tar.gz
 WORKDIR /openmpi-2.0.0
 RUN ./configure --with-cuda=/usr/local/cuda --prefix=/openmpi
 RUN make -j$(nproc) && make install
+# for cpu only environments
+RUN ./configure --prefix=/openmpi-cpu
+RUN make -j$(nproc) && make install
 
 # compile openblas
 WORKDIR /
@@ -55,7 +58,7 @@ RUN pip install -r requirements-gpu.txt
 ENV USER mpirun
 ENV HOME=/home/${USER}
 
-RUN adduser --disabled-password --gecos "" ${USER} && echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN adduser --gecos "" ${USER}
 # change passwords
 RUN echo "${USER}:${USER}" | chpasswd
 
@@ -68,10 +71,10 @@ RUN mkdir /var/run/sshd
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
 
 # Set environment variables
-RUN echo "export VISIBLE=now" >> /etc/profile
-RUN echo 'export PATH=/OpenBLAS/bin:/openmpi/bin:/usr/local/cuda/bin:$PATH' >> /etc/profile
-RUN echo 'export LD_LIBRARY_PATH="/OpenBLAS/lib:/openmpi/lib:$LD_LIBRARY_PATH"' >> /etc/profile
-RUN echo 'export CUDA_ROOT=/usr/local/cuda' >> /etc/profile
+RUN echo "export VISIBLE=now" >> /etc/bash.bashrc
+RUN echo 'export PATH=/OpenBLAS/bin:/openmpi/bin:/usr/local/cuda/bin:$PATH' >> /etc/bash.bashrc
+RUN echo 'export LD_LIBRARY_PATH="/OpenBLAS/lib:/openmpi/lib:$LD_LIBRARY_PATH"' >> /etc/bash.bashrc
+RUN echo 'export CUDA_ROOT=/usr/local/cuda' >> /etc/bash.bashrc
 
 USER mpirun
 
@@ -84,8 +87,12 @@ RUN cp ${SSHDIR}/id_rsa.pub ${SSHDIR}/authorized_keys
 
 #RUN chmod -R 600 ${SSHDIR}* && chown -R ${USER}:${USER} ${SSHDIR}
 #RUN chown "${USER}:${USER}" -R /home/${USER} && chown ${USER}:${USER} -R $HOME 
-RUN virtualenv -p python --system-site-packages ${HOME}/venv
-RUN echo 'source ${HOME}/venv/bin/activate' >> ${HOME}/.bashrc
+WORKDIR ${HOME}
+RUN mkdir data cache results
+RUN virtualenv -p python --system-site-packages .venv
+RUN echo 'source ${HOME}/venv/bin/activate' >> .bashrc
+RUN git clone https://github.com/acopar/crow
+#RUN cd crow && python setup.py install
 
 USER root
 # prepare first run for cuda-cffi

@@ -11,48 +11,6 @@ from crow.config import *
 from crow.utils import *
 from crow.__main__ import run_wrapper
 
-DATASETS = {
-     'ArrayExpress': ('ArrayExpress/ArrayExpress.csv', False), 
-     'ml-100k': ('movielens/ml-100k/ml-100k.csv', True),
-     'ml-1m': ('movielens/ml-1m/ml-1m.csv', True),
-     'ml-10m': ('movielens/ml-10m/ml-10m.csv', True), 
-     'ml-20m': ('movielens/ml-20m/ml-20m.csv', True),
-     'netflix': ('netflix/netflix.csv', True),
-     'sparse-1m': ('synthetic/sparse-1m/sparse-1m.csv', True), 
-     'dense-1m': ('synthetic/sparse-1m/dense-1m.csv', False),
-     'sparse-10m': ('synthetic/sparse-10m/sparse-10m.csv', True), 
-     'dense-10m': ('synthetic/sparse-10m/dense-10m.csv', False),
-     'sparse-100m': ('synthetic/sparse-100m/sparse-100m.csv', True), 
-     'dense-100m': ('synthetic/sparse-100m/dense-100m.csv', False),
-     'ESAD-UK': ('ICGC/ESAD-UK/ESAD-UK.csv', True), 
-     'LIRI-JP': ('ICGC/LIRI-JP/LIRI-JP.csv', True),
-     'fetus': ('giant/fetus/fetus.csv', True), 
-     'cochlea': ('giant/cochlea/cochlea.csv', True), 
-     'kidney': ('giant/kidney/kidney.csv', True),
-     'retina': ('giant/retina/retina.csv', True),
-     'TCGA-BRCA': ('TCGA/TCGA-BRCA/TCGA-BRCA.csv', False), 
-     'miRNA': ('miRNA/miRNA.csv', False),
-     'cochlea-dense': ('giant/cochlea-dense/cochlea-dense.csv', False),
-     'retina-dense': ('giant/retina-dense/retina-dense.csv', False),
-     'ESAD-UK-dense': ('ICGC/ESAD-UK/ESAD-UK-dense.csv', False),
-     'fetus-dense': ('giant/fetus/fetus-dense.csv', False), 
-     'kidney-dense': ('giant/kidney/kidney-dense.csv', False),
-     'IntAct': ('IntAct/IntAct.csv', True)
-}
-
-
-def load_data_cofigs(data_list):
-    return [(to_path(DATA, DATASETS[key][0]), DATASETS[key][1]) for key in data_list]
-
-def get_output(dataset, rulefile, k):
-    data_file = dataset[0]
-    data_folder = get_data_folder(data_file)
-    databasename = os.path.basename(data_file)
-    data_base = os.path.splitext(databasename)[0]
-    rulename = os.path.basename(rulefile)
-    rulename = os.path.splitext(rulename)[0]
-    output = to_path(RESULTS, data_base, rulename, 'K%d_%d' % (k[0], k[1]))
-    return output
 
 def get_output_indexed(dataset, rulefile, idx, blocks):
     data_file = dataset[0]
@@ -146,12 +104,17 @@ def run_setups(dataset, method, setups, k = (20,20), max_iter=100, init='random'
         
         run_wrapper(se)
 
+def dataname_to_path(dataname):
+    return to_path(DATA, dataname, '%s.csv' % dataname)
+
 def benchmark(argv):
+    sparse_map = {'ArrayExpress': False, 'TCGA-BRCA': False, 'fetus': True,
+        'retina-dense': False, 'cochlea-dense': False, 'retina': True, 'cochlea': True}
     data_list = ['ArrayExpress', 'TCGA-BRCA', 'fetus', 'retina-dense', 'cochlea-dense']
     data_list = ['ArrayExpress']
-    datasets = load_data_cofigs(data_list)
-    
-    method_list = ['nmtf_long_err']
+    datasets = [(dataname_to_path(key), sparse_map[key]) for key in data_list]
+
+    method_list = ['nmtf_long']
     update_rules = [(m, 'random') for m in method_list]
     
     block_map = {
@@ -162,7 +125,7 @@ def benchmark(argv):
         'fetus': 'r'
     }
     
-    context = 'gpu'
+    context = 'cpu'
     u = False
     setups = [{'blocks': (1,1), 'parallel': 1, 'context': context, 'unbalanced': u},
             {'blocks': (2,1), 'parallel': 2, 'context': context, 'unbalanced': u},
@@ -172,8 +135,8 @@ def benchmark(argv):
             {'blocks': (1,4), 'parallel': 4, 'context': context, 'unbalanced': u}]
     #setups = [{'blocks': (2,2), 'parallel': 4, 'context': context, 'unbalanced': u}]
     
-    #setups = [{'blocks': (3,2), 'parallel': 6, 'context': context}]
-    setups = [{'blocks': (1,1), 'parallel': 1, 'context': context}]
+    setups = [{'blocks': (3,2), 'parallel': 6, 'context': context}]
+    #setups = [{'blocks': (1,1), 'parallel': 1, 'context': context}]
 
     k_list = [20]
     for dataset in datasets:
@@ -189,6 +152,26 @@ def benchmark(argv):
                 k = (k1, k1)
                 run_setups(dataset, method, setups, k=k, max_iter=10, init=init, sync=True, sparse=dataset[1])
 
+def random_sparse(n, m, density=1.0):
+    X = np.zeros((n,m), dtype=np.float32, order='C')
+    for i in range(n):
+        for j in range(m):
+            rnd = np.random.random()
+            if rnd < density:
+                r = np.random.random()
+                X[i,j] = r
+    return X
+
+def basic_test():
+    cache_folder = get_cache_folder('../data/test.csv', to_path(CACHE, 'data'))
+    npzfile = to_path(cache_folder, '1_1', '0_0.npz')
+    X = random_sparse(100, 100)
+    save_numpy(npzfile, X)
+    
+    
+    dataset = 'test'
+    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'cpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
 
 def main():
     parser = argparse.ArgumentParser(version=VERSION, description='Crow')
@@ -201,7 +184,7 @@ def main():
     if args.benchmark:
         benchmark(argv)
     else:
-        print "No test selected"
+        basic_test()
     
     
 if __name__ == "__main__":

@@ -89,7 +89,7 @@ This generates a small random dataset and tries to factorize it.
 
 ### Data format ###
 -------------------
-The data can be provided in csv in row-column-value format (regardless of data sparsity). In header, we define matrix dimensions **n,m**. After that, each row of the csv file represents one non-zero value in the matrix. In each row, the first column represents index at first dimension **i**, second column index of second dimension **j** and third column represents the value of data matrix **X** at location X[i,j].
+The data can be provided in coordinate list format (coo), which is a form of csv file, where each row describes one element in a matrix with row, column, value and header stores matrix dimensions. In header, we define matrix dimensions **n,m**. After that, each row of the file represents one non-zero value in the matrix. In each row, the first column represents index at first dimension **i**, second column index of second dimension **j** and third column represents the value of data matrix **X** at location X[i,j].
 
 For example, consider this 2D matrix:
 ```
@@ -103,36 +103,34 @@ Corresponding data file would look like this:
     1,1,5
 ```
 
-There is a convenience tool, which can convert pickled numpy array to the correct format.
-
-```
-   crow-convert test.pkl test.csv
-```
-
+You can use provided tool `crow-conv` to conveniently convert between csv and coo formats.
 
 ### Command line arguments ###
 -------------------------
 
 The program takes the following arguments:
-- -a: factorization rank, for example k=20, or k=20,l=30 if the factorization ranks differ.
+
+- -a: factorization rank, for example ``k=20``, or ``k=20,l=30`` if the factorization ranks are different.
 - -b: block configuration, for example 2x2.
-- -e: calculate and print error function in each iteration. 
-- -g: use this argument to use GPUs. By default, only CPU cores will be used.
-- -i: maximum number of iterations.
-- -p: parallelization degree: must be equal or less than the number of blocks. 
-- -r: update rules. Use nmtf_long for non-orthogonal or nmtf_ding for orthogonal NMTF.
+- -e: calculate and print error function in each iteration. This can slow down factorization considerably.
+- -g: use this argument to run on GPUs. By default, only CPU cores will be used.
+- -i: maximum number of iterations, default is 100.
+- -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
+- -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. 
 - -s: Use sparse data structures. Do not use this if the matrix density is larger than 10%.
+- -t: additional stopping criteria, default is None.
 - Last argument is path to data file.
+
 
 ### Usage examples ###
 -----------------
 
 Serial configuration using one core, run for 100 iterations.
 
-    crow -i 100 -a k=20 ../data/data.csv
+    crow -i 100 -a k=20 ../data/data.coo
 
 Example usage for 4-GPU run with 2x2 block configuration and factorization rank 20.
 
-    crow -g -p 4 -b 2x2 -a k=20 -i 100 ../data/data.csv
+    crow -g -p 4 -b 2x2 -a k=20 -i 100 ../data/data.coo
 
 

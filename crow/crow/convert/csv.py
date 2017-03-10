@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import sys
 import os
 import csv
@@ -40,7 +38,7 @@ def save_csv(filename, data, delimiter=',', append=False):
         writer.writerow(line)
     fp.close()
 
-def write_csv(filename, X):
+def write_coo(filename, X):
     fp = open(filename, 'w')
     writer = csv.writer(fp, delimiter=',')
     n = X.shape[0]
@@ -53,7 +51,7 @@ def write_csv(filename, X):
                 writer.writerow([i,j,value])
     fp.close()
 
-def read_csv(filename, verbose=False):
+def load_coo(filename, verbose=False):
     fp = open(filename, 'r')
     reader = csv.reader(fp, delimiter=',')
     header = reader.next()
@@ -83,25 +81,55 @@ def read_csv(filename, verbose=False):
     fp.close()
     return X
 
-
-def main():
-    parser = argparse.ArgumentParser(version=VERSION, description='Crow')
-    parser.add_argument("-d", "--delimiter", default="comma", help="Change delimiter")
-    parser.add_argument("--header", help="Skip csv header line")
+def load_coo_sparse(filename, verbose=False):
+    fp = open(filename, 'r')
+    reader = csv.reader(fp, delimiter=',')
+    meta = reader.next()
+    N = int(meta[0])
+    M = int(meta[1])
     
-    parser.add_argument('args', nargs='2', help='Two filenames in order: input output')
-    args = parser.parse_args()
+    rows = []
+    cols = []
+    vals = []
     
-    argv = args.args
-    src = argv[0]
-    dst = argv[1]
-    X = load_csv(src)
-    if not X is None:
-        X = np.array(X, dtype=np.float32)
-        write_csv(dst, X)
-    else:
-        raise Exception("Problem with opening csv file %s" % src)
+    n = 0
+    m = 0
+    
+    tz = time.time()
+    it = 0
+    for line in reader:
+        if it > 1 and it % 5000000 == 0:
+            print "Progress %dM" % (it / 1000000)
+        i, j, r = int(line[0]), int(line[1]), float(line[2])
+        if r < 0:
+            r = 0
+        if i > n:
+            n = i
+        if j > m:
+            m = j
+        rows.append(i)
+        cols.append(j)
+        vals.append(r)
+        it += 1
+    
+    fp.close()
+    n = n+1
+    m = m+1
 
+    print N, n
+    print M, m
+    
+    n, m = N, M
+    
+    t0 = time.time()
+    print 'Read in: ', t0-tz
+    data = np.array(vals, dtype=np.float32)
+    X = csr_matrix((vals,(rows,cols)),shape=(n, m),dtype=np.float32)
+    return X
 
-if __name__ == "__main__":
-    main()
+def write_dense_csv(filename, X, delimiter=','):
+    fp = open(filename, 'w')
+    writer = csv.writer(fp, delimiter=delimiter)
+    for i in range(n):
+        writer.writerow(X[i,:])
+    fp.close()

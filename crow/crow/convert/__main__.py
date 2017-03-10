@@ -10,50 +10,71 @@ import argparse
 from crow.convert.csv import *
 from crow.utils import *
 
-def to_csv(src, dst):
-    check_file(src)
-    X = load_numpy(src)
-    write_csv(dst, X)
 
-def to_numpy(src, dst):
+def convert(src, dst, it, ot, header=False):
     check_file(src)
-    X = read_factor(src)
-    save_numpy(dst, X)
+    X = None
+    if it == 'coo':
+        X = load_coo(src)
+    elif it == 'csv':
+        X = load_csv(src, delimiter=',')
+        if header:
+            X = X[1:]
+        X = np.array(X, dtype=np.float32)
+    elif it == 'tab':
+        X = load_csv(src, delimiter='\t')
+        if header:
+            X = X[1:]
+        X = np.array(X, dtype=np.float32)
+    elif it == 'npz':
+        X = load_numpy(src)
+    elif it == 'pkl':
+        X = load_file(src)
+
+    if out == 'coo':
+        write_coo(dst, X)
+    elif it == 'csv':
+        write_dense_csv(dst, X)
+    elif it == 'tab':
+        write_dense_csv(dst, X, delimiter='\t')
+    elif it == 'npz':
+        save_numpy(dst, X)
+    elif it == 'pkl':
+        dump_file(dst, X)
 
 def main():
-    parser = argparse.ArgumentParser(version=VERSION, description='Crow')
-    parser.add_argument("-c", "--csv", help="Convert numpy pickle to csv", action="store_true")
-    parser.add_argument("-n", "--numpy", help="Convert csv to numpy", action="store_true")
+    parser = argparse.ArgumentParser(version=VERSION, description='Crow converter')
+    parser.add_argument("-i", "--input", help="Explicitly set input type")
+    parser.add_argument("-o", "--output", help="Explicitly set output type")
+    parser.add_argument("--header", help="Skip header line", action="store_true")
     
     parser.add_argument('args', nargs='2', help='Two filenames in order: input output')
     args = parser.parse_args()
     
-    if args.csv and args.numpy:
-        raise Exception('Only one [-c, -n] can be selected at a time')
-    
     argv = args.args
-    if args.csv:
-        src = argv[0]
-        dst = argv[1]
-        to_csv(src, dst)
-    elif args.numpy:
-        src = argv[0]
-        dst = argv[1]
-        to_numpy(src, dst)
-    else:
-        # guessing based on file extensions
-        src = argv[0]
-        dst = argv[1]
-        src_ext = os.path.splitext(src)
-        dst_ext = os.path.splitext(dst)
-        if src_ext == '.csv' and dst_ext == '.npz':
-            to_numpy(src, dst)
-        elif src_ext == '.npz' and dst_ext == '.csv':
-            to_csv(src, dst)
-        elif src_ext == dst_ext:
-            raise Exception("Both data types are the same, nothing to convert.")
-            
-        raise Exception("Unable to detect file types: currently only csv and npz types are available")
+    src = argv[0]
+    dst = argv[1]
+    
+    input_type = os.path.splitext(src).replace('.', '')
+    if args.input:
+        input_type = args.input
+    
+    output_type = os.path.splitext(out).replace('.', '')
+    if args.output:
+        output_type = args.output
+    
+    supported_types = ['coo', 'csv', 'npz', 'pkl', 'tab']
+    if input_type not in supported_types:
+        raise Exception("Input type '%s' not supported" % input_type)
+    
+    if output_type not in supported_types:
+        raise Exception("Output type '%s' not supported" % input_type)
+    
+    if input_type == output_type:
+        raise Exception("Both data types are the same, nothing to do.")
+    
+    convert(src, dst, input_type, output_type, header=args.header)
+
         
     
 if __name__ == "__main__":

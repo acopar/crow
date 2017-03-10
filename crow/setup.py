@@ -48,8 +48,7 @@ setup(name='crow',
         "console_scripts": ['crow = crow.__main__:main',
                             'crow-runner = crow.__main__:run',
                             'crow-test = tests.__main__:main',
-                            'crow-conv = crow.convert.__main__:main'
-                            'crow-csv = crow.convert.csv:main']
+                            'crow-conv = crow.convert.__main__:main']
     },
     zip_safe=False,
     install_requires=reqs,
