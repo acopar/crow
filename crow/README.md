@@ -1,9 +1,8 @@
 # CROW 
-============
+
 A scalable implementation of non-negative matrix tri-factorization for multi-processor and multi-GPU environments.
 
-### Quick Setup ###
--------------------
+## Quick Setup ###
 
 The most convenient way to setup the environment is to use provided docker images. Refer to the [Online documentation](https://crow.readthedocs.io/) for detailed explanation on how to setup your environment. Here is a quick setup guide.
 
@@ -106,7 +105,6 @@ Corresponding data file would look like this:
 You can use provided tool `crow-conv` to conveniently convert between csv and coo formats.
 
 ### Command line arguments ###
--------------------------
 
 The program takes the following arguments:
 
@@ -123,7 +121,6 @@ The program takes the following arguments:
 
 
 ### Usage examples ###
------------------
 
 Serial configuration using one core, run for 100 iterations.
 

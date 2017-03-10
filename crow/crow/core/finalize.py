@@ -70,9 +70,8 @@ def factordict_to_csv(filename):
     dimensions, new_factors = load_file(filename)
     for key in new_factors:
         factor = new_factors[key]
-        filename = to_path(RESULTS, '%s.csv' % key)
-        write_csv(filename, factor)
-
+        filename = to_path(RESULTS, '%s.npz' % key)
+        save_numpy(filename, factor)
 
 def measure_error(params):
     cache_folder = params['data_folder']

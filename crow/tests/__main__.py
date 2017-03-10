@@ -37,7 +37,7 @@ def run_setups(dataset, method, setups, k = (20,20), max_iter=100, init='random'
     if init not in ['random', 'vcol']:
         init = 'ignore'
     
-    data_file, sparse = dataset[0], dataset[1]
+    data_file = dataset
     cache_folder = to_path(CACHE, 'data')
     data_folder = get_cache_folder(data_file, cache_folder)
     factor_folder = to_path(RESULTS, 'factors')
@@ -150,7 +150,7 @@ def benchmark(argv):
             
             for k1 in k_list:
                 k = (k1, k1)
-                run_setups(dataset, method, setups, k=k, max_iter=10, init=init, sync=True, sparse=dataset[1])
+                run_setups(dataset[0], method, setups, k=k, max_iter=10, init=init, sync=True, sparse=dataset[1])
 
 def random_sparse(n, m, density=1.0):
     X = np.zeros((n,m), dtype=np.float32, order='C')
@@ -163,7 +163,7 @@ def random_sparse(n, m, density=1.0):
     return X
 
 def basic_test():
-    cache_folder = get_cache_folder('../data/test.csv', to_path(CACHE, 'data'))
+    cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
     npzfile = to_path(cache_folder, '1_1', '0_0.npz')
     X = random_sparse(100, 100)
     save_numpy(npzfile, X)
