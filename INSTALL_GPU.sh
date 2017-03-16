@@ -6,3 +6,4 @@ $DIRNAME/scripts/install-docker.sh
 $DIRNAME/scripts/install-docker-compose.sh
 $DIRNAME/scripts/install-nvidia-docker.sh
 $DIRNAME/scripts/install-nvidia-docker-compose.sh
+$DIRNAME/scripts/install-crow.sh
