@@ -71,7 +71,7 @@ RUN mkdir /var/run/sshd
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
 
 # Set environment variables
-RUN echo "export VISIBLE=now" >> /etc/bash.bashrc
+RUN echo 'export VISIBLE=now' >> /etc/bash.bashrc
 RUN echo 'export PATH=/OpenBLAS/bin:/openmpi/bin:/usr/local/cuda/bin:$PATH' >> /etc/bash.bashrc
 RUN echo 'export LD_LIBRARY_PATH="/OpenBLAS/lib:/openmpi/lib:$LD_LIBRARY_PATH"' >> /etc/bash.bashrc
 RUN echo 'export CUDA_ROOT=/usr/local/cuda' >> /etc/bash.bashrc
@@ -85,14 +85,13 @@ RUN echo "StrictHostKeyChecking no" >> ${SSHDIR}/config
 RUN ssh-keygen -f "${SSHDIR}/id_rsa" -N '' -t rsa -b 2048
 RUN cp ${SSHDIR}/id_rsa.pub ${SSHDIR}/authorized_keys
 
-#RUN chmod -R 600 ${SSHDIR}* && chown -R ${USER}:${USER} ${SSHDIR}
-#RUN chown "${USER}:${USER}" -R /home/${USER} && chown ${USER}:${USER} -R $HOME 
+# Prepare virtual environment and install crow
 WORKDIR ${HOME}
 RUN mkdir data cache results
-RUN virtualenv -p python --system-site-packages .venv
+RUN virtualenv -p python --system-site-packages venv
 RUN echo 'source ${HOME}/venv/bin/activate' >> .bashrc
-RUN git clone https://github.com/acopar/crow
-#RUN cd crow && python setup.py install
+RUN git clone https://github.com/acopar/crow crow
+RUN source ~/venv/bin/activate && cd crow && python setup.py install
 
 USER root
 WORKDIR /

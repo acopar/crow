@@ -160,6 +160,7 @@ def random_sparse(n, m, density=1.0):
             if rnd < density:
                 r = np.random.random()
                 X[i,j] = r
+    
     return X
 
 def basic_test():
@@ -168,14 +169,50 @@ def basic_test():
     X = random_sparse(100, 100)
     save_numpy(npzfile, X)
     
+    dataset = 'test'
+    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'cpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+    
+    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+
+def large_test():
+    cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
+    npzfile = to_path(cache_folder, '1_1', '0_0.npz')
+    X = random_sparse(10000, 1000, density=1.0)
+    save_numpy(npzfile, X)
     
     dataset = 'test'
     setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'cpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
 
+    setups = [{'blocks': (4,2), 'parallel': 8, 'context': 'cpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+    
+    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+    
+    setups = [{'blocks': (2,2), 'parallel': 4, 'context': 'gpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+
+def gpu_test():
+    cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
+    npzfile = to_path(cache_folder, '1_1', '0_0.npz')
+    X = random_sparse(10000, 10000, density=1.0)
+    save_numpy(npzfile, X)
+    
+    dataset = 'test'
+    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+    
+    setups = [{'blocks': (2,2), 'parallel': 4, 'context': 'gpu'}]
+    run_setups(dataset, 'nmtf_long', setups, sparse=False)
+
 def main():
     parser = argparse.ArgumentParser(version=VERSION, description='Crow')
     parser.add_argument("-b", "--benchmark", help="Benchmark CPU and GPU speed", action="store_true")
+    parser.add_argument("-s", "--speedup", help="Benchmark CPU and GPU speed", action="store_true")
+    parser.add_argument("-g", "--gpu", help="Multi-GPU test", action="store_true")
 
     parser.add_argument('args', nargs='*', help='Other args')
     args = parser.parse_args()
@@ -183,9 +220,13 @@ def main():
     argv = args.args
     if args.benchmark:
         benchmark(argv)
+    elif args.gpu:
+        gpu_test()
     else:
         basic_test()
-    
+        if args.speedup:
+            large_test()
+
     
 if __name__ == "__main__":
     main()
