@@ -55,7 +55,7 @@ COPY ./requirements-gpu.txt requirements-gpu.txt
 RUN pip install -r requirements-gpu.txt
 
 # create a non-root user
-ENV USER mpirun
+ENV USER crow
 ENV HOME=/home/${USER}
 
 RUN adduser --gecos "" ${USER}
@@ -65,7 +65,6 @@ RUN echo "${USER}:${USER}" | chpasswd
 # ssh configuration
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
-#RUN sed -i 's/\#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 
 RUN mkdir /var/run/sshd
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
@@ -76,7 +75,7 @@ RUN echo 'export PATH=/OpenBLAS/bin:/openmpi/bin:/usr/local/cuda/bin:$PATH' >> /
 RUN echo 'export LD_LIBRARY_PATH="/OpenBLAS/lib:/openmpi/lib:$LD_LIBRARY_PATH"' >> /etc/bash.bashrc
 RUN echo 'export CUDA_ROOT=/usr/local/cuda' >> /etc/bash.bashrc
 
-USER mpirun
+USER crow
 
 ENV SSHDIR ${HOME}/.ssh/
 RUN mkdir -p ${SSHDIR}
@@ -90,8 +89,9 @@ WORKDIR ${HOME}
 RUN mkdir data cache results
 RUN virtualenv -p python --system-site-packages venv
 RUN echo 'source ${HOME}/venv/bin/activate' >> .bashrc
-RUN git clone https://github.com/acopar/crow crow
-RUN source ~/venv/bin/activate && cd crow && python setup.py install
+RUN echo 'cd ${HOME}' >> .bashrc
+RUN git clone https://github.com/acopar/crow src
+RUN bash -c "source ~/venv/bin/activate && cd src/crow && python setup.py install"
 
 USER root
 WORKDIR /
