@@ -3,7 +3,7 @@
 Tutorial
 ========
 
-The application reads the provided csv file into data matrix *X*. Then it the data into three non-negative latent factors, such that:
+The application reads the provided ``coo`` file into data matrix *X*. Then it the data into three non-negative latent factors, such that:
 
 .. math::
     
@@ -34,18 +34,18 @@ Serial configuration using one core, run for 100 iterations.
 
 ::
 
-    crow -i 100 -a k=20 ../data/data.csv
+    crow -i 100 -a k=20 ../data/data.coo
 
 Example usage for 4-GPU run with 2x2 block configuration and factorization rank 20.
 
 ::
 
-    crow -g -p 4 -b 2x2 -a k=20 -i 100 ../data/data.csv
+    crow -g -p 4 -b 2x2 -a k=20 -i 100 ../data/data.coo
 
 
 When the process is finished, you should have the following files in ``results`` directory:
 
-* U.csv - csv row-column-value format for left factor.
-* V.csv - csv row-column-value format for right factor.
-* S.csv - csv row-column-value format for middle factor.
+* U.npz - contains left factor matrix. 
+* V.npz - contains right factor matrix.
+* S.npz - contains middle factor matrix.
 * factors.pkl - pickle file containing dictionary with numpy matrices. Numpy matrices contain the same values as csv files, but raw format. More efficient than csv if you use python to further process the data.

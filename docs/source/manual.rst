@@ -20,14 +20,19 @@ Python
 
 
 
+.. _manual_cuda:
+
 CUDA
 ----
 
+If you have CUDA-enabled GPU devices, you have probably already installed nvidia drivers and CUDA. If not, you can install them from your package repository, like this:
 
 ::
 
-    apt-get install nvidia-current nvidia-cuda-dev
+    sudo apt-get install nvidia-cuda-toolkit
+    reboot # nvidia driver requires reboot
 
+This should also take care of installing current nvidia driver. If you want the latest version of CUDA or specific instructions for different platform, follow the `Official CUDA installation guide <http://docs.nvidia.com/cuda/cuda-installation-guide-linux>`_.
 
 
 openMPI
@@ -75,6 +80,7 @@ Other system dependencies
 -------------------------
 
 Install libraries required for cuda-cffi module and zmq module.
+
 ::
 
     apt-get install libffi-dev libzmq3-dev
