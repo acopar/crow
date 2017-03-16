@@ -4,27 +4,62 @@ A scalable implementation of non-negative matrix tri-factorization for multi-pro
 
 ## Quick Setup ###
 
-The most convenient way to setup the environment is to use provided docker images. Refer to the [Online documentation](https://crow.readthedocs.io/) for detailed explanation on how to setup your environment. Here is a quick setup guide.
+The most convenient way to setup the environment is to use provided docker images. Here is a quick setup guide for Ubuntu-based platforms. For other platforms and detailed setup instructions, please refer to the [Online documentation](https://crow.readthedocs.io/).
 
-#### CPU-only version
+#### Clone git repository
 
-First, clone the crow source repository.
 ```sh
-    git clone https://github.com/acopar/crow crow
+    git clone https://github.com/acopar/crow
     cd crow
-    nvidia-docker-compose up
 ```
 
-#### GPU-enabled version
+#### Install for CPU-only environment
 
-First, clone the crow source repository.
+This script skips CUDA and nvidia-docker installation. Useful for systems without CUDA-enabled GPU devices.
+
 ```sh
-    git clone https://github.com/acopar/crow crow
-    cd crow
-    docker-compose up
+    ./INSTALL_CPU.sh
 ```
 
-#### Docker volumes
+#### Install for GPU environment
+
+```sh
+    ./INSTALL_GPU.sh
+```
+
+#### Start docker container
+
+This script checks if there are nvidia devices present, otherwise it falls back to CPU-only version.
+
+```sh
+    ./RUN.sh
+```
+
+## Attach to a running container
+
+```sh
+    ./CONNECT.sh
+```
+
+Alternatively, you can ssh into the container, you just need to check ssh port of the container with `docker ps`.
+
+```
+    ssh -p <container-ssh-port> crow@localhost
+```
+
+### Test your configuration
+
+Once you have the environment up and running, you can use this script to test if everything works correctly.
+
+```sh
+    crow-test
+```
+
+This generates a small random dataset and tries to factorize it. 
+
+
+
+## Docker volumes
 
 Crow docker images makes use of the following external volumes:
 - crow: path to the crow source code 
@@ -34,60 +69,11 @@ Note that cache can take several gigabytes, depending on your data. You can
 safely clean this folder, but note that it may take some time to process the data again. 
 - results: this is where the factorized data will be stored.
 
-You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose tries to connect the volumes in current directory. Therefore, you can also use symbolic links and point to the directory where you want to store data, cache or results.
+You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose creates the folders in the current directory. Therefore, you can also use symbolic links and point to the directory where you want to store data, cache or results.
 
-You can do this by creating symbolic links or in the same directory as docker-compose.yml, for example:
-```sh
-    ln -s <path-to-your-data-folder> data
-    mkdir /tmp/crow-cache
-    ln -s /tmp/crow-cache cache
-    mkdir results
-```
 
-After you changed volume paths, you need to call docker-compose again.
-```sh
-    docker volume create --name=nvidia_driver_367.57
-    nvidia-docker-compose up
-```
+## Data format
 
-#### Connect to the container
-
-Now, you can connect to the running docker container:
-
-```
-    docker exec --it crow_head_1 /bin/bash
-```
-
-Alternatively, you can ssh into the container, you just need to check the correct ssh port with `docker ps`.
-
-```
-    ssh -p <container-ssh-port> mpirun@localhost
-```
-
-#### Run docker standalone
-
-If you run docker container as standalone application, instead of using `docker-compose`, 
-you need to provide path to external volumes manually. For GPU-enabled version refer to the `nvidia-docker-compose.yml` file (which is generated after initial `nvidia-docker-compose`) and provide all volumes and devices from command line. 
-
-```sh
-   docker run -v <source-dir>:/home/mpirun/crow 
-             -v <data-dir>:/home/mpirun/data:ro
-             -v <cache-dir>:/home/mpirun/cache 
-             -v <results-dir>:/home/mpirun/results
-             --rm -it acopar/crow /bin/bash
-```
-
-### Test your configuration ###
--------------------------------
-
-Once you have the environment up and running, you can use this script to test if everything works correctly.
-```sh
-    crow-test
-```
-This generates a small random dataset and tries to factorize it.
-
-### Data format ###
--------------------
 The data can be provided in coordinate list format (coo), which is a form of csv file, where each row describes one element in a matrix with row, column, value and header stores matrix dimensions. In header, we define matrix dimensions **n,m**. After that, each row of the file represents one non-zero value in the matrix. In each row, the first column represents index at first dimension **i**, second column index of second dimension **j** and third column represents the value of data matrix **X** at location X[i,j].
 
 For example, consider this 2D matrix:
@@ -104,7 +90,8 @@ Corresponding data file would look like this:
 
 You can use provided tool `crow-conv` to conveniently convert between csv and coo formats.
 
-### Command line arguments ###
+
+### Command line arguments
 
 The program takes the following arguments:
 
@@ -120,7 +107,7 @@ The program takes the following arguments:
 - Last argument is path to data file.
 
 
-### Usage examples ###
+### Examples
 
 Serial configuration using one core, run for 100 iterations.
 

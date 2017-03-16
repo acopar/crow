@@ -16,18 +16,18 @@ Docker install requirements for all environments:
 Requirements for GPU environments:
 
 * `CUDA >= 8.0 <https://developer.nvidia.com/cuda-downloads>`_
-* `nvidia-docker >= 1.0.0 <https://github.com/NVIDIA/nvidia-docker>`_
+* `nvidia-docker >= 1.0.1 <https://github.com/NVIDIA/nvidia-docker>`_
 * `nvidia-docker-compose <https://github.com/eywalker/nvidia-docker-compose>`_
+* `Python library yaml <https://wiki.python.org/moin/YAML>`_.
 
-If you don't have these programs installed, follow the :ref:`quick requirements installation <docker>` or links above for setup instructions on various platforms.
+If you don't have these programs installed, follow the :ref:`requirements setup guide <docker>` or links above for setup instructions of individual packages.
 
 
-After you have installed the requirements, clone `crow git repository <https://github.com/acopar/crow>`_.
+If you have not done so while installing the requirements, clone the `crow git repository <https://github.com/acopar/crow>`_.
 
 ::
     
-    git clone https://github.com/acopar/crow
-    cd crow
+    git clone https://github.com/acopar/crow && cd crow
 
 
 Configuration
@@ -53,44 +53,33 @@ Alternatively, change ``docker-compose.yml`` to point to the desired locations, 
 
 ::
 
-    - ./crow:/home/mpirun/crow
-    - /mnt/data:/home/mpirun/data:ro
-    - ../tmp/crow-cache:/home/mpirun/cache
-    - ./results:/home/mpirun/results
+    - ./crow:/home/crow/src
+    - /mnt/data:/home/crow/data:ro
+    - ../tmp/crow-cache:/home/crow/cache
+    - ./results:/home/crow/results
 
 
 Start containers
 ----------------
 
-
-For GPU environments start the container with ``nvidia-docker-compose``. 
-
-::
-    
-    nvidia-docker-compose up
-    docker volume create --name=nvidia_driver_367.57
-
-
-For CPU only install, use ``docker-compose`` directly.
+Start the container with provided ``RUN.sh`` script. For development and manual run, check 
 
 ::
-    
-    docker-compose up
+
+    ./RUN.sh 
 
 
-
-Once the container is running, you can attach to it with the following command:
+Then connect to a container with ``CONNECT.sh`` script.
 
 ::
-    
-    docker exec -it crow_head_1 /bin/bash
-    
+
+    ./CONNECT.sh
 
 Alternatively, you can connect to the container with ssh.
 
 ::
 
-    ssh -p <container port> mpirun@localhost
+    ssh -p <container port> crow@localhost
 
 
 Once inside docker the container, follow the :ref:`Tutorial <tutorial>` to start using NMTF. 
