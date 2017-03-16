@@ -3,7 +3,7 @@ FROM nvidia/cuda:8.0-devel
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update -y && apt-get install -y git openssh-server python-pip \
-    python-virtualenv gcc gfortran binutils python-dev libffi-dev libzmq3-dev
+    python-virtualenv gcc gfortran binutils python-dev libffi-dev libzmq3-dev locate
 
 # compile openmpi with cuda support
 RUN wget https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.0.tar.gz
