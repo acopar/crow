@@ -58,7 +58,7 @@ RUN pip install -r requirements-gpu.txt
 ENV USER crow
 ENV HOME=/home/${USER}
 
-RUN adduser --gecos "" ${USER}
+RUN useradd -s /bin/bash -m ${USER}
 # change passwords
 RUN echo "${USER}:${USER}" | chpasswd
 
