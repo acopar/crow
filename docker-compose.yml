@@ -6,10 +6,10 @@ services:
         ports: 
             - "22"
         volumes:
-            - ./crow:/home/mpirun/crow
-            - ./data:/home/mpirun/data:ro
-            - ./cache:/home/mpirun/cache
-            - ./results:/home/mpirun/results
+            - ./crow:/home/crow/crow
+            - ./data:/home/crow/data:ro
+            - ./cache:/home/crow/cache
+            - ./results:/home/crow/results
         networks:
             - crownet
 

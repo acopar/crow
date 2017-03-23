@@ -7,6 +7,6 @@ if [ -n $PORT ]; then
     if [ $# -eq 0 ]; then
         ssh -p $PORT crow@localhost
     else
-        ssh -p $PORT crow@localhost "$*"
+        ssh -p $PORT crow@localhost "source ~/.profile && $*"
     fi
 fi
