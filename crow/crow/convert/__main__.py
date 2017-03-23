@@ -7,6 +7,7 @@ import traceback
 import subprocess
 import argparse
 
+from crow.config import *
 from crow.convert.csv import *
 from crow.utils import *
 
@@ -31,16 +32,26 @@ def convert(src, dst, it, ot, header=False):
     elif it == 'pkl':
         X = load_file(src)
 
-    if out == 'coo':
+    if ot == 'coo':
         write_coo(dst, X)
-    elif it == 'csv':
+    elif ot == 'csv':
         write_dense_csv(dst, X)
-    elif it == 'tab':
+    elif ot == 'tab':
         write_dense_csv(dst, X, delimiter='\t')
-    elif it == 'npz':
+    elif ot == 'npz':
         save_numpy(dst, X)
-    elif it == 'pkl':
+    elif ot == 'pkl':
         dump_file(dst, X)
+
+def validate_filepath(src):
+    cwd = os.getcwd()
+    if cwd == '/home/crow':
+        if check_file(src, soft=True) == False:
+            print "Warning: Using paths relative to home inside the docker container"
+            raise Exception("File not found at location %s/%s" % (cwd, src))
+    else:
+        check_file(src)
+            
 
 def main():
     parser = argparse.ArgumentParser(version=VERSION, description='Crow converter')
@@ -48,18 +59,20 @@ def main():
     parser.add_argument("-o", "--output", help="Explicitly set output type")
     parser.add_argument("--header", help="Skip header line", action="store_true")
     
-    parser.add_argument('args', nargs='2', help='Two filenames in order: input output')
+    parser.add_argument('source', nargs=1, help='Two filenames in order: input output')
+    parser.add_argument('target', nargs=1, help='Two filenames in order: input output')
     args = parser.parse_args()
     
-    argv = args.args
-    src = argv[0]
-    dst = argv[1]
+    src = args.source[0]
+    dst = args.target[0]
     
-    input_type = os.path.splitext(src).replace('.', '')
+    validate_filepath(src)
+    
+    input_type = os.path.splitext(src)[1].replace('.', '')
     if args.input:
         input_type = args.input
     
-    output_type = os.path.splitext(out).replace('.', '')
+    output_type = os.path.splitext(dst)[1].replace('.', '')
     if args.output:
         output_type = args.output
     

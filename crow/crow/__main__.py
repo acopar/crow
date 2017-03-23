@@ -16,11 +16,15 @@ from crow.utils import *
 from crow.preprocess import factors, procdata, blockmap
 from crow.core import finalize, start, factorize
 
+def nice_print(params):
+    print 'Data label: %s\nParameters: %s\nMethod: %s\nIterations: %d' % (params['data_file'], params['arguments'], params['rulefile'], params['max_iter'])
+    print 'Parallelization: %dx%s, partitions: %dx%d' % (params['parallel'], params['context'], params['blocks'][0], params['blocks'][1])
+
 def mpiexec(rank, params):
     environ = os.environ
     
     environ['OMP_NUM_THREADS'] = '1'
-    print params
+    nice_print(params)
     
     proc = subprocess.Popen(['mpirun', '--allow-run-as-root', '-c', str(rank), 'crow-runner', json.dumps(params)], 
         env=environ)
@@ -120,7 +124,10 @@ def run_wrapper(params, merge=True):
     out, err = mpiexec(params['parallel'], params)
     if merge:
         finalize.merge_and_test(params)
-
+        print 'Factors U.npz, S.npz, V.npz are stored in %s' % RESULTS
+        print 'Convert them to csv like this:'
+        print '    $ crow-conv results/S.npz results/S.csv'
+        print
 
 def get_config(params):
     nb, mb = params['blocks']
@@ -240,7 +247,7 @@ def core():
     dimensions = {}
     data = factorize.run(inputs, outputs, config, dimensions, flags=flags, sync=sync)
     if comm.rank == 0:
-        print 'Time', data['itertime']
+        print 'Average iteration time:', data['itertime']
 
 
 

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+PORT=$(docker ps -f name=crow_head_1 --format '{{.Ports}}' | sed 's/.*:\([0-9]*\)->.*/\1/g')
+
+if [ -n $PORT ]; then
+
+    if [ $# -eq 0 ]; then
+        ssh -p $PORT crow@localhost
+    else
+        ssh -p $PORT crow@localhost "source ~/.profile && $*"
+    fi
+fi

@@ -1,4 +1,4 @@
-# CROW 
+# CROW: Fast Non-Negative Matrix Tri-Factorization
 
 A scalable implementation of non-negative matrix tri-factorization for multi-processor and multi-GPU environments.
 

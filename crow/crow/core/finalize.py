@@ -62,11 +62,11 @@ def merge_and_test(params):
         new_factors[key] = X
     
     dump_file(ffile, (dimensions, new_factors))
-    factordict_to_csv(ffile)
+    factordict_to_npz(ffile)
     measure_error(params)
 
 
-def factordict_to_csv(filename):
+def factordict_to_npz(filename):
     dimensions, new_factors = load_file(filename)
     for key in new_factors:
         factor = new_factors[key]
@@ -84,7 +84,9 @@ def measure_error(params):
     S = storage['S']
     V = storage['V']
     E = storage['E']
-    print 'E', E.sum()
+    err = E.sum()
+    if err != 0.0:
+        print 'Builtin error function:', err
     
     filename = to_path(cache_folder, '%d_%d' % (1, 1), '%d_%d.npz' % (0, 0))
     if not os.path.isfile(filename):
