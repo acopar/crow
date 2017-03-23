@@ -173,10 +173,7 @@ def basic_test():
     setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'cpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
     
-    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
-    run_setups(dataset, 'nmtf_long', setups, sparse=False)
-
-def large_test():
+def speedup_test():
     cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
     npzfile = to_path(cache_folder, '1_1', '0_0.npz')
     X = random_sparse(10000, 1000, density=1.0)
@@ -198,13 +195,13 @@ def large_test():
 def gpu_test():
     cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
     npzfile = to_path(cache_folder, '1_1', '0_0.npz')
-    X = random_sparse(10000, 10000, density=1.0)
+    X = random_sparse(1000, 1000)
     save_numpy(npzfile, X)
     
     dataset = 'test'
     setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
-    
+
     setups = [{'blocks': (2,2), 'parallel': 4, 'context': 'gpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
 
@@ -222,10 +219,10 @@ def main():
         benchmark(argv)
     elif args.gpu:
         gpu_test()
+    elif args.speedup:
+        speedup_test()
     else:
         basic_test()
-        if args.speedup:
-            large_test()
 
     
 if __name__ == "__main__":

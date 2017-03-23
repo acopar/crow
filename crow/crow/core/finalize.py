@@ -98,5 +98,11 @@ def measure_error(params):
     X1 = np.dot(np.dot(U, S), V.T)
     Q = (X - X1)
     E = np.sum(Q * Q)
+    F = np.sum(X * X)
     
+<<<<<<< Updated upstream
     print 'Error function:', E
+=======
+    error = E / F
+    print 'Frobenius norm:', error
+>>>>>>> Stashed changes
