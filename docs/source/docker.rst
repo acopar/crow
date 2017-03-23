@@ -121,6 +121,6 @@ In order to execute docker commands as a regular user, you need to be in docker 
     
 
 Troubleshooting
-===============
+---------------
 
 If these instructions fail, post a `issue on github <https://github.com/acopar/crow/issues>`_ so we can update them.

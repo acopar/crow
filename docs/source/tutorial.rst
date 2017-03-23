@@ -48,4 +48,3 @@ When the process is finished, you should have the following files in ``results``
 * U.npz - contains left factor matrix. 
 * V.npz - contains right factor matrix.
 * S.npz - contains middle factor matrix.
-* factors.pkl - pickle file containing dictionary with numpy matrices. Numpy matrices contain the same values as csv files, but raw format. More efficient than csv if you use python to further process the data.

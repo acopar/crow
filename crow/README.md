@@ -15,36 +15,36 @@ The most convenient way to setup the environment is to use provided docker image
 
 #### Install for CPU-only environment
 
-This script skips CUDA and nvidia-docker installation. Useful for systems without CUDA-enabled GPU devices.
+This script skips CUDA and nvidia-docker installation. Useful for systems without CUDA-enabled GPU devices. This command also updates crow docker image to the latest version. 
 
 ```sh
-    ./INSTALL_CPU.sh
+    make install
 ```
 
 #### Install for GPU environment
 
 ```sh
-    ./INSTALL_GPU.sh
+    make install-gpu
 ```
 
 #### Start docker container
 
-This script checks if there are nvidia devices present, otherwise it falls back to CPU-only version.
+This script checks if there are nvidia devices present, otherwise it falls back to CPU-only version. 
 
 ```sh
-    ./RUN.sh
+    crow-start
 ```
 
 ## Attach to a running container
 
 ```sh
-    ./CONNECT.sh
+    crow-exec
 ```
 
-Alternatively, you can ssh into the container, you just need to check ssh port of the container with `docker ps`.
+Alternatively, you can ssh into the container. You just need to check ssh port of the container with `docker ps`, or use the provided script `crow-ssh` that detects port automatically.
 
-```
-    ssh -p <container-ssh-port> crow@localhost
+```sh
+    crow-ssh
 ```
 
 ### Test your configuration
@@ -55,9 +55,11 @@ Once you have the environment up and running, you can use this script to test if
     crow-test
 ```
 
-This generates a small random dataset and tries to factorize it. 
+This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, use `-g` switch.
 
-
+```sh
+    crow-test -g
+```
 
 ## Docker volumes
 
@@ -69,8 +71,7 @@ Note that cache can take several gigabytes, depending on your data. You can
 safely clean this folder, but note that it may take some time to process the data again. 
 - results: this is where the factorized data will be stored.
 
-You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose creates the folders in the current directory. Therefore, you can also use symbolic links and point to the directory where you want to store data, cache or results.
-
+You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose creates the folders in the current directory. Instead of editing docker-compose file you can also use symbolic links or mount to link data, cache or results to a different folder or device.
 
 ## Data format
 
@@ -88,7 +89,7 @@ Corresponding data file would look like this:
     1,1,5
 ```
 
-You can use provided tool `crow-conv` to conveniently convert between csv and coo formats.
+For convenient conversion between csv, npz and coo formats, `crow-conv` tool is provided in the docker image. Additional instructions can be found in [Data manipulation section](https://crow.readthedocs.io/en/latest/data.html).
 
 
 ### Command line arguments
