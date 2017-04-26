@@ -1,18 +1,21 @@
 .. _container:
 
-Start docker containers
-=======================
+Docker containers
+=================
 
-Quick start
------------
-
-Start the container with provided ``RUN.sh`` script. 
+Start the crow container with ``crow-start`` command:
 
 ::
 
-    ./RUN.sh 
+    crow-start
 
+
+If you do not have sufficient permissions to run ``scripts/install-crow.sh``, use the provided ``RUN.sh`` script. 
 If this fails for any reason, try to start the containers manually (instructions below). Otherwise, you can skip the rest of this section and proceed with :ref:`connecting to a running container <container_connect>`.
+
+
+Start containers manually
+=========================
 
 Start GPU container
 -------------------
@@ -46,7 +49,7 @@ This process is automated in ``RUN-CPU.sh`` script.
 Without docker-compose
 ----------------------
 
-You can manually start CPU instances of docker container without docker-compose, but you will need to provide path to external volumes explicitly. With this command, you are dropped directly into the contanier and you can skip directly to the :ref:`data section <data>`. 
+You can manually start CPU instances of docker container without docker-compose, but you will need to provide path to external volumes explicitly. With this command, you are dropped directly into the contanier and you can skip directly to the :ref:`Tutorial <tutorial>`. 
 
 ::
 
@@ -60,16 +63,17 @@ You can manually start CPU instances of docker container without docker-compose,
 
 .. _container_connect:
 
-Connect to a running docker instance
-====================================
+Connect to a running docker container
+=====================================
 
-If you used one of the install scripts, shortcuts were copied into your path, and you can use one of the following commands to attach to a container:
-
+If you used one of the install scripts, shortcuts were copied into your path, and you can use one of the following commands to attach to your running container:
 
 ::
     
     crow-exec
     crow-ssh
+
+Default ssh password for docker container is crow. Change this password if you decide to open the container's ssh port to the public. If this works, you can proceed to the :ref:`Tutorial <tutorial>`.
 
 
 If these commands are missing, you just need to run ``scripts/install-crow.sh`` or use this script, which is provided in the project home folder:
@@ -78,5 +82,5 @@ If these commands are missing, you just need to run ``scripts/install-crow.sh`` 
 
     ./CONNECT.sh
 
-If this fails, check the output of ``docker ps`` and chec if the container is running.
+If this fails, check the output of ``docker ps`` to see if the container is running. You may need to run ``crow-start`` again. 
 
