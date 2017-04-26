@@ -1,9 +1,41 @@
 .. _data:
 
+Docker volumes
+==============
+
+Crow docker images makes use of the following external volumes. 
+
+* crow: path to the crow source code (for development).
+* data: path to directory with data, mounted read-only.
+* results: this is where the factorized data will be stored.
+* cache: path to directory, where the application stores intermediate files. Starting with empty folder, the cache can take several gigabytes, depending on your data so make sure that you have enough space on the partition. You can safely clean this folder, but note that it may take some time to process the data again. 
+
+Open the ``docker-compose.yml`` directory and make sure that the mount directories point to the desired locations. By default, mount points for each volume points to a folder in the current working directory. Refer to the :ref:`data section  <data>` for more information. 
+
+You can use symbolic links to connect path to your data, like this:
+
+::
+
+    ln -s <path-to-your-data-folder> data
+    mkdir results
+    mkdir -p ../tmp/crow-cache
+    ln -s ../tmp/crow-cache cache
+
+Alternatively, change ``docker-compose.yml`` to point to the desired locations, for example:
+
+::
+
+    - ./crow:/home/crow/src
+    - /mnt/data:/home/crow/data:ro
+    - ../tmp/crow-cache:/home/crow/cache
+    - ./results:/home/crow/results
+
+
+
 Data manipulation
 =================
 
-In order to use the application, you first need to convert your data into appropriate format. 
+Before you can factorize your data, you first need to convert it into an appropriate format.
 
 Input data
 ----------
@@ -31,6 +63,7 @@ The following formats are used:
 * npz - this method uses `numpy.savez <https://docs.scipy.org/doc/numpy/reference/generated/numpy.savez.html>`_.  Default format for resulting factors. It is also used to cache dense or csr sparse matrices internally.
 * pkl - used to store other python data, such as dictionaries.
 * csv - not used internally, but supported through conversion. Note that when converting back, there is no header line. 
+
 
 Convert between different csv and coo formats
 ---------------------------------------------

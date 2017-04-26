@@ -15,14 +15,16 @@ You can use the provided install scripts to setup requirements automatically. Cu
 For machines without CUDA-enabled GPU devices, use CPU version.
 
 ::
+    
+    make install
+    
 
-    ./INSTALL_CPU.sh
-
-This script also tries to install CUDA
+If you have GPU devices present, use the following command to also install GPU dependencies.
 
 ::
 
-    ./INSTALL-GPU.sh
+    make install-gpu
+
 
 
 Install CUDA
@@ -107,6 +109,7 @@ This application depends on yaml python module, which can be installed with ``pi
 or using the packages from your distribution.
 
 ::
+    
     sudo apt-get install python-yaml
     
 
