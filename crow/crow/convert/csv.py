@@ -75,7 +75,7 @@ def load_coo(filename, verbose=False):
         if value < 0:
             print 'Warning: setting negative value to zero, position (%d,%d)' % (i,j)
             value = 0.0
-        X[i,j] = r
+        X[i,j] = value
         it += 1
     
     fp.close()

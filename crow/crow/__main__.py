@@ -14,10 +14,18 @@ import atexit
 from crow.config import *
 from crow.utils import *
 from crow.preprocess import factors, procdata, blockmap
-from crow.core import finalize, start, factorize
+from crow.core import finalize, factorize
 
 def nice_print(params):
-    print 'Data label: %s\nParameters: %s\nMethod: %s\nIterations: %d' % (params['data_file'], params['arguments'], params['rulefile'], params['max_iter'])
+    dimensions = from_arguments(params['arguments'])
+    fact_rank = 'k1xk2 = %sx%s' % (dimensions['k'], dimensions['l']) 
+    method_name = '%s' % params['rulefile']
+    if method_name == 'nmtf_long':
+        method_name = 'Non-orthogonal NMTF (nmtf_long)'
+    if method_name == 'nmtf_ding':
+        method_name = 'Orthogonal NMTF (nmtf_ding)'
+    
+    print 'Data: %s\nParameters: %s\nMethod: %s\nMax iterations: %d' % (params['data_file'], fact_rank, method_name, params['max_iter'])
     print 'Parallelization: %dx%s, partitions: %dx%d' % (params['parallel'], params['context'], params['blocks'][0], params['blocks'][1])
 
 def mpiexec(rank, params):
@@ -29,28 +37,27 @@ def mpiexec(rank, params):
     proc = subprocess.Popen(['mpirun', '--allow-run-as-root', '-c', str(rank), 'crow-runner', json.dumps(params)], 
         env=environ)
     
-    out, err = proc.communicate()    
+    out, err = proc.communicate()
     return out, err
 
 
 def main():
     parser = argparse.ArgumentParser(version=VERSION, description='Crow')
-    parser.add_argument("-a", "--arguments", default='', help='Add arguments in key=value pairs separated with commas')
-    parser.add_argument("-b", "--blocks", help="Block configuration", default='1x1')
-    parser.add_argument("-e", "--error", help="Error function", action="store_true")
-    parser.add_argument("-f", "--force", help='Force all steps', action="store_true")
+    parser.add_argument("-a", "--arguments", default='', help='Pass arguments in key=value pairs separated with commas (deprecated, use -k1 and -k2 instead)')
+    parser.add_argument("-b", "--blocks", help="Block configuration (default 1x1)", default='1x1')
+    parser.add_argument("-e", "--error", help="Print error function", action="store_true")
+    parser.add_argument("-f", "--force", help='Force all steps. Overwrite files during execution.', action="store_true")
     parser.add_argument("-g", "--gpu", help="Run on GPU", action="store_true")
-    parser.add_argument("-i", "--max-iter", type=int, default=10, help='Number of iterations')
-    parser.add_argument("--k1", default=None, help='First rank value')
-    parser.add_argument("--k2", default=None, help='Second rank value')
+    parser.add_argument("-i", "--max-iter", type=int, default=10, help='Number of iterations (default 10)')
+    parser.add_argument("-k1", "--k1", default=None, help='First rank value (default 10)')
+    parser.add_argument("-k2", "--k2", default=None, help='Second rank value (default 10)')
     
     parser.add_argument("-m", "--imbalanced", help="Imbalanced partitioning", action="store_true")
-    parser.add_argument("-n", "--init", help="Initialization", default='random')
+    parser.add_argument("-n", "--init", help="Initialization (default random)", default='random')
     parser.add_argument("-o", "--orthogonal", help='Run with orthogonal constraints', action="store_true")
     # do not specify unless different from blocks
-    parser.add_argument("-p", "--parallel", type=int, default=None, help='Parallelization degree')
+    parser.add_argument("-p", "--parallel", type=int, default=None, help='Parallelization degree (default: number of blocks)')
     parser.add_argument("-s", "--sparse", help="Run sparse", action="store_true")
-    #parser.add_argument("-r", "--rulefile", help="Rule filename", default='')
     parser.add_argument("-t", "--stop", help='Stopping criteria', default='')
     
     # Debugging flags
@@ -68,7 +75,13 @@ def main():
         parallel = args.parallel
     
     data_file = args.args[0]
-    
+    if not os.path.isfile(data_file):
+        data_base = os.path.basename(data_file)
+        data_file2 = to_path(DATA, data_base)
+        if not os.path.isfile(data_file2):
+            raise Exception("File not found: %s" % data_file)
+        data_file = data_file2
+        
     context = 'cpu'
     if args.gpu == True:
         context = 'gpu'
@@ -83,8 +96,12 @@ def main():
             arguments = 'k=%s' % args.k1
             if args.k2 != None:
                 arguments = '%s,l=%s' % (arguments, args.k2)
+            else:
+                arguments = '%s,l=%s' % (arguments, args.k1)
+        elif args.k2 != None:
+            arguments = 'k=%s,l=%s' % (args.k2, args.k2)
         else:
-            arguments = 'k=10'
+            arguments = 'k=10,l=10'
     
     params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'arguments': arguments, 
         'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': rulefile, 
@@ -99,7 +116,7 @@ def run_wrapper(params, merge=True):
     blockmap_file = to_path(CACHE, 'index', 'index.pkl')
     
     if 'data_file' not in params:
-        raise Exception("Please provide a path to data file")
+        raise Exception("Please provide a path to a data file")
     data_file = params['data_file']
     cache_folder = to_path(CACHE, 'data')
     data_folder = get_cache_folder(data_file, cache_folder)
@@ -109,7 +126,7 @@ def run_wrapper(params, merge=True):
     results_folder = to_path(output_folder, 'storage')
     
     template = {'blocks': (1,1), 'sparse': False, 'max_iter': 100, 'context': 'cpu', 'sync': True,
-        'k': '(20, 20)', 'arguments': 'k=20,l=20', 'parallel': 1, 'rulefile': 'nmtf_long', 'init': 'random', 
+        'arguments': 'k=20,l=20', 'parallel': 1, 'rulefile': 'nmtf_long', 'init': 'random', 
         'multiplier': 1, 'error': True, 'override': False, 'debug': None, 'test': False, 'unbalanced': False,
         'data_folder': data_folder, 'data_file': data_file, 'factor_folder': factor_folder, 
         'results_folder': results_folder, 'output_folder': output_folder, 'factor_cache': factor_cache,
@@ -242,10 +259,12 @@ def core():
     sync = params['sync']
     
     flags = {'dense': dense, 'error': params['error'], 'test': params['test'], 
-        'override': params['override'], 'debug': params['debug'], 'sync': params['sync']}
+        'override': params['override'], 'debug': params['debug'], 'sync': params['sync'],
+        'stop': params['stop']
+    }
     
     dimensions = {}
-    data = factorize.run(inputs, outputs, config, dimensions, flags=flags, sync=sync)
+    data = factorize.run(inputs, outputs, config, dimensions, flags=flags)
     if comm.rank == 0:
         print 'Average iteration time:', data['itertime']
 

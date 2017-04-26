@@ -30,15 +30,14 @@ class CPUOperation(Operation):
 
 
 class CPUContext(Context):
-    def __init__(self, inputs, dimensions, config, dense=False, test=False, sync=True):
+    def __init__(self, inputs, dimensions, config, flags):
         comm = MPI.COMM_WORLD
         rank = comm.rank
         size = comm.size
-        super(CPUContext,self).__init__(rank, size, inputs, dimensions, config, 
-            dense=dense, test=test, sync=sync)
+        super(CPUContext,self).__init__(rank, size, inputs, dimensions, config, flags)
             
         _bigdot = bigdot
-        if dense == True:
+        if flags['dense'] == True:
             _bigdot = dot
 
         self.operation = CPUOperation(self.rank, self.rev_map, 
