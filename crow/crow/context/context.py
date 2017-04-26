@@ -15,14 +15,14 @@ def get_dimension(dimensions, n, block):
         return dimensions[n]
 
 class Context(object):
-    def __init__(self, rank, size, inputs, dimensions, config, dense=False, test=False, sync=True):
+    def __init__(self, rank, size, inputs, dimensions, config, flags):
         self.dimensions = dimensions
-        self.dense = dense
-        self.test = test
+        self.dense = flags['dense']
+        self.test = flags['test']
         self.rank = rank
         self.size = size
-        self.sync = sync
-        
+        self.sync = flags['sync']
+        self.stop = flags['stop']
         
         self.max_iter = config['max_iter']
         self.balanced = True

@@ -1,5 +1,5 @@
 
-def run(inputs, outputs, config, dimensions, flags=None, sync=True, max_repeat=1):
+def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
     max_iter = config['max_iter']
     select_method = inputs['method']
     output = outputs['output']
@@ -7,10 +7,10 @@ def run(inputs, outputs, config, dimensions, flags=None, sync=True, max_repeat=1
     context = config['context']
     if context == 'gpu':
         from crow.context.gpucontext import GPUContext
-        c = GPUContext(inputs, dimensions, config, test=flags['test'], dense=flags['dense'], sync=sync)
+        c = GPUContext(inputs, dimensions, config, flags)
     elif context == 'cpu':
         from crow.context.cpucontext import CPUContext
-        c = CPUContext(inputs, dimensions, config, test=flags['test'], dense=flags['dense'], sync=sync)
+        c = CPUContext(inputs, dimensions, config, flags)
     else:
         raise Exception("Unrecognized context type %s" % context)
     
