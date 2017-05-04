@@ -55,12 +55,13 @@ COPY ./requirements-gpu.txt requirements-gpu.txt
 RUN pip install -r requirements-gpu.txt
 
 # create a non-root user
-ENV USER crow
-ENV HOME=/home/${USER}
+ENV USERNAME crow
+ENV HOME=/home/${USERNAME}
 
-RUN useradd -s /bin/bash -m ${USER}
+USER root
+RUN useradd -s /bin/bash -m ${USERNAME}
 # change passwords
-RUN echo "${USER}:${USER}" | chpasswd
+RUN echo "${USERNAME}:${USERNAME}" | chpasswd
 
 # ssh configuration
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
@@ -68,7 +69,7 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 RUN mkdir /var/run/sshd
-RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
+#RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
 
 # Set environment variables
 #RUN echo '. /etc/profile.d/crow.sh' >> /etc/bash.bashrc
@@ -78,7 +79,7 @@ RUN echo 'export PATH=/OpenBLAS/bin:/openmpi/bin:/usr/local/cuda/bin:$PATH' >> /
 RUN echo 'export LD_LIBRARY_PATH="/OpenBLAS/lib:/openmpi/lib:$LD_LIBRARY_PATH"' >> /etc/profile.d/crow.sh
 RUN echo 'export CUDA_ROOT=/usr/local/cuda' >> /etc/profile.d/crow.sh
 
-USER crow
+USER ${USERNAME}
 
 ENV SSHDIR ${HOME}/.ssh/
 RUN mkdir -p ${SSHDIR}
