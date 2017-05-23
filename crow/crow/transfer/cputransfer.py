@@ -12,6 +12,12 @@ def npzeros(n, m):
 def npzero_slices(slices, k):
     return [npzeros(b-a,k) for a,b in slices]
 
+def npones(n, m):
+    return np.array(np.ones((n, m)), dtype=np.float32, order='C')
+
+def npnumber(x):
+    return np.array(np.zeros((1,1))+x, dtype=np.float32, order='C')
+
 ### Reducer and synchronizations ###
 
 def sync_only():

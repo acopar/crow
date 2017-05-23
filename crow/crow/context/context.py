@@ -14,6 +14,37 @@ def get_dimension(dimensions, n, block):
     else:
         return dimensions[n]
 
+def factorization(f):
+    def new_f(*args, **kwargs):
+        self = args[0]
+        kwargs['X'] = self.storage['X']
+        kwargs['U'] = self.storage['U']
+        kwargs['S'] = self.storage['S']
+        kwargs['V'] = self.storage['V']
+        kwargs['E'] = self.storage['E']
+        
+        blocks_i, blocks_j = self.block_map
+        bid = blocks_i[0]
+        
+        self.operation.bid = bid
+        kwargs['n'] = self.dimensions['n'][bid]
+        kwargs['m'] = self.dimensions['m'][bid]
+        kwargs['k'] = self.dimensions['k'][bid]
+        kwargs['l'] = self.dimensions['l'][bid]
+
+        self.timer = Timer()
+        self.operation.load_kernel()
+        self.operation.sync_flag = self.sync
+        
+        h = f(*args, **kwargs)
+
+        self.operation.empty_sync_matrix(None, None, None)
+        self.timer.stop()
+        
+        return h
+
+    return new_f
+
 class Context(object):
     def __init__(self, rank, size, inputs, dimensions, config, flags):
         self.dimensions = dimensions
@@ -23,6 +54,8 @@ class Context(object):
         self.size = size
         self.sync = flags['sync']
         self.stop = flags['stop']
+        self.prev = None
+        self.now = None
         
         self.max_iter = config['max_iter']
         self.balanced = True
@@ -60,6 +93,8 @@ class Context(object):
         self.params = [{'type': 'data', 'name': 'X', 'size': 'nm'}, {'type': 'factor', 'name': 'U', 'size': 'nk'}, 
         {'type': 'factor', 'name': 'V', 'size': 'ml'}, {'type': 'factor', 'name': 'S', 'size': 'kl'}, 
         {'type': 'error', 'name': 'E', 'size': '11'}]
+        
+        self.number_of_iterations = self.max_iter - 2
     
     def get_blocks(self):
         return self.block_map[0]
@@ -188,29 +223,41 @@ class Context(object):
                     dump_file(storage_out, self.storage[key][bid])
     
     
-    def run_nmtf_long(self, debug=None, print_err=False):
-        params = self.params
-        self.timer = Timer()
+    def check_stop(self, E=None):
+        if self.stop == None:
+            return False
+    
+        if self.prev == None:
+            if E is not None:
+                self.prev = E.fetch()[0,0]
+            return False
         
-        h = []
-        self.operation.load_kernel()
-        EPSILON = 10**(-9)
+        if E is not None:
+            self.now = E.fetch()[0,0]
         
-        data = self.storage
+        
+        if self.stop == 'e4':
+            if np.abs(self.prev - self.now) < 10**(-4):
+                return True
+        
+        if self.stop == 'e5':
+            if np.abs(self.prev - self.now) < 10**(-5):
+                return True
+        
+        if self.stop == 'e6':
+            if np.abs(self.prev - self.now) < 10**(-6):
+                return True
+                
+        if self.stop == 'e7':
+            if np.abs(self.prev - self.now) < 10**(-7):
+                return True
+        self.prev = self.now
+    
+    @factorization
+    def run_nmtf_long(self, X=None, U=None, S=None, V=None, E=None, n=None, 
+        m=None, k=None, l=None, debug=None, print_err=False):
         o = self.operation
-        blocks_i, blocks_j = self.block_map
-        bid = blocks_i[0]
-        X = data['X']
-        U = data['U']
-        V = data['V']
-        S = data['S']
-        E = data['E']
-        
-        self.operation.bid = bid
-        n = self.dimensions['n'][bid]
-        m = self.dimensions['m'][bid]
-        k = self.dimensions['k'][bid]
-        l = self.dimensions['l'][bid]
+        h = []
         
         MK4 = o.zeros(m, k)
         NK5 = o.zeros(n, k)
@@ -230,84 +277,68 @@ class Context(object):
         KL21 = o.zeros(k, l)
         KL22 = o.zeros(k, l)
         KL23 = o.zeros(k, l)
+        notify = o.number(0)
+        AA11 = o.zeros(1,1)
+        AA12 = o.number(n*k)
         
         for it in range(self.max_iter):
+            o.it = it
+            if self.rank == 0 and self.check_stop(E=E):
+                print self.check_stop(E=E)
+                notify = o.number(1)
+                o.sync_(notify, 'i')
+                o.sync_(notify, 'j')
+                self.number_of_iterations = it
+                
+            if notify.fetch()[0,0] == 1:
+                print "Stopping criteria reached after %d iterations" % it
+                break
+            
             if it == 2 and self.sync == False:
-                self.operation.sync_matrix = self.operation.empty_sync_matrix
-                self.operation.mreduce = self.operation.empty_mreduce
+                o.sync_matrix = o.empty_sync_matrix
+                o.mreduce = o.empty_mreduce
+            
             if it == 2:
                 self.timer.split('main')
             
-            if it < 2 or self.sync == True:
-                o.sync_0j(S)
+            o.sync_0j(S)
             o.dot_wrapper('mkk', V, S, MK4, transb='T')
-            if it < 2 or self.sync == True:
-                o.sync_(MK4, 'j')
+            o.sync_(MK4, 'j')
             o.dot_wrapper('nmk', X, MK4, NK5)
-            if it < 2 or self.sync == True:
-                o.reduce_(NK5, 'i')
+            o.reduce_(NK5, 'i')
             o.dot_wrapper('kmk', MK4, MK4, KK6, transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0j(KK6)
-                o.sync_0i(KK6)
+            o.reduce_0j(KK6)
+            o.sync_0i(KK6)
             o.dot_wrapper('nkk', U, KK6, NK7)
             o.kernel_wrapper('nk', NK5, NK7, U)
-            if it < 2 or self.sync == True:
-                o.sync_(U, 'i')
+            o.norm1(U, AA11, transa='N')
+            o.reduce_(AA11, 'i')
+            o.divide(AA11, AA12, E)
+            o.sync_(U, 'i')
             o.dot_wrapper('mnk', X, U, MK11, transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_(MK11, 'j')
+            o.reduce_(MK11, 'j')
             o.dot_wrapper('mkk', MK11, S, ML12)
             o.dot_wrapper('knk', U, U, KK13, transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0i(KK13)
+            o.reduce_0i(KK13)
             o.dot_wrapper('kkk', KK13, S, KL14)
-            if it < 2 or self.sync == True:
-                o.sync_0j(KL14)
+            o.sync_0j(KL14)
             o.dot_wrapper('mkk', MK4, KL14, ML15)
             o.kernel_wrapper('mk', ML12, ML15, V)
             o.dot_wrapper('kmk', MK11, V, KL19, transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0j(KL19)
+            o.reduce_0j(KL19)
             o.dot_wrapper('kmk', V, V, LL20, transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0j(LL20)
+            o.reduce_0j(LL20)
             o.dot_wrapper('kkk', KL14, LL20, KL21)
             o.kernel_wrapper('kk', KL19, KL21, S)
         
-        self.operation.empty_sync_matrix(None, None, None)
-        
-        self.timer.stop()
-        
-        if debug:
-            dump_file('%s_%d' % (debug, self.rank), v.trace)
-        
         return h
-
-    def run_nmtf_long_err(self, debug=None, print_err=False):
-        params = self.params
-        
-        self.timer = Timer()
-        
-        h = []
-        self.operation.load_kernel()
-        EPSILON = 10**(-9)
-        
-        data = self.storage
+    
+    
+    @factorization
+    def run_nmtf_long_err(self, X=None, U=None, S=None, V=None, E=None, n=None, 
+        m=None, k=None, l=None, debug=None, print_err=False):
         o = self.operation
-        blocks_i, blocks_j = self.block_map
-        bid = blocks_i[0]
-        X = data['X']
-        U = data['U']
-        V = data['V']
-        S = data['S']
-        E = data['E']
-        
-        self.operation.bid = bid
-        n = self.dimensions['n'][bid]
-        m = self.dimensions['m'][bid]
-        k = self.dimensions['k'][bid]
-        l = self.dimensions['l'][bid]
+        h = []
         
         KM5 = o.zeros(k, m)
         NM6 = o.zeros(n, m)
@@ -333,12 +364,24 @@ class Context(object):
         KL29 = o.zeros(k, l)
         KL30 = o.zeros(k, l)
         KL31 = o.zeros(k, l)
+        notify = o.number(0)
         
         for it in range(self.max_iter):
-            #if it == 2:
-            #    self.operation.sync_matrix = self.operation.empty_sync_matrix
-            #    self.operation.mreduce = self.operation.empty_mreduce
-            #v.t2 = Timer()
+            o.it = it
+            if self.rank == 0 and self.check_stop(E=E):
+                notify = o.number(1)
+                o.sync_(notify, 'i')
+                o.sync_(notify, 'j')
+                self.number_of_iterations = it
+            
+            if notify.fetch()[0,0] == 1:
+                print "Stopping criteria reached after %d iterations" % it
+                break
+            
+            if it == 2 and self.sync == False:
+                o.sync_matrix = o.empty_sync_matrix
+                o.mreduce = o.empty_mreduce
+            
             if it == 2:
                 self.timer.split('main')
 
@@ -347,8 +390,12 @@ class Context(object):
                 err = e[0,0]
                 
                 if self.rank == 0:
-                    print '%d,' % it, float(err)/1000
-                    h.append(err)
+                    if it == 0:
+                        print "Frobenius norm at iteration:"
+                    else:
+                        print '%d:' % it, float(err)
+                        h.append(err)
+            
             
             o.sync_0j(S)
             o.dot_wrapper('kkm', S, V, KM5, transb='T', transa='N')
@@ -357,12 +404,12 @@ class Context(object):
             o.dot_wrapper('nkm', U, KM5, NM6, transb='N', transa='N')
             o.sub(X, NM6, NM7)
             o.square(NM7, NM8, transa='N')
-            o.norm1(NM8, E, transa='N')
-            o.reduce_(E, 'ij')
-            #o.square(X, NM10, transa='N')
-            #o.norm1(NM10, E, transa='N')
-            #o.reduce_(E, 'ij')
-            #o.divide(AA9, AA11, E)
+            o.norm1(NM8, AA9, transa='N')
+            o.reduce_(AA9, 'ij')
+            o.square(X, NM10, transa='N')
+            o.norm1(NM10, AA11, transa='N')
+            o.reduce_(AA11, 'ij')
+            o.divide(AA9, AA11, E)
             o.sync_(KM5, 'j')
             o.dot_wrapper('nmk', X, KM5, NK13, transb='T', transa='N')
             o.reduce_(NK13, 'i')
@@ -394,37 +441,14 @@ class Context(object):
             o.sqrt(KL30, KL31, transa='N')
             o.multiply(S, KL31, S)
         
-        self.operation.empty_sync_matrix(None, None, None)
-        self.timer.stop()
-        
-        if debug:
-            dump_file('%s_%d' % (debug, self.rank), v.trace)
-        
         return h
+    
 
-    def run_nmtf_ding(self, debug=None, print_err=False):
-        params = self.params
-        self.timer = Timer()
-        
-        h = []
-        self.operation.load_kernel()
-        EPSILON = 10**(-9)
-        
-        data = self.storage
+    @factorization
+    def run_nmtf_ding(self, X=None, U=None, S=None, V=None, E=None, n=None, 
+        m=None, k=None, l=None, debug=None, print_err=False):
         o = self.operation
-        blocks_i, blocks_j = self.block_map
-        bid = blocks_i[0]
-        X = data['X']
-        U = data['U']
-        V = data['V']
-        S = data['S']
-        E = data['E']
-        
-        self.operation.bid = bid
-        n = self.dimensions['n'][bid]
-        m = self.dimensions['m'][bid]
-        k = self.dimensions['k'][bid]
-        l = self.dimensions['l'][bid]
+        h = []
         
         MK4 = o.zeros(m, k)
         NK5 = o.zeros(n, k)
@@ -445,87 +469,69 @@ class Context(object):
         KL22 = o.zeros(k, l)
         KL23 = o.zeros(k, l)
         KL24 = o.zeros(k, l)
-                
+        notify = o.number(0)
+        AA11 = o.zeros(1,1)
+        AA12 = o.number(n*k)
         
         for it in range(self.max_iter):
+            o.it = it
+            if self.rank == 0 and self.check_stop(E=E):
+                notify = o.number(1)
+                o.sync_(notify, 'i')
+                o.sync_(notify, 'j')
+                self.number_of_iterations = it
+                
+            if notify.fetch()[0,0] == 1:
+                print "Stopping criteria reached after %d iterations" % it
+                break
+            
             if it == 2 and self.sync == False:
-                self.operation.sync_matrix = self.operation.empty_sync_matrix
-                self.operation.mreduce = self.operation.empty_mreduce
+                o.sync_matrix = o.empty_sync_matrix
+                o.mreduce = o.empty_mreduce
+            
             if it == 2:
                 self.timer.split('main')
             
-            if it < 2 or self.sync == True:
-                o.sync_0j(S)
+            o.sync_0j(S)
             o.dot_wrapper('mkk', V, S, MK4, transb='T', transa='N')
-            if it < 2 or self.sync == True:
-                o.sync_(MK4, 'j')
+            o.sync_(MK4, 'j')
             o.dot_wrapper('nmk', X, MK4, NK5, transb='N', transa='N')
-            if it < 2 or self.sync == True:
-                o.reduce_(NK5, 'i')
+            o.reduce_(NK5, 'i')
             o.dot_wrapper('knk', U, NK5, KK6, transb='N', transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0i(KK6)
-                o.sync_0i(KK6)
+            o.reduce_0i(KK6)
+            o.sync_0i(KK6)
             o.dot_wrapper('nkk', U, KK6, NK7, transb='N', transa='N')
             o.kernel_wrapper('nk', NK5, NK7, U)
-            if it < 2 or self.sync == True:
-                o.sync_(U, 'i')
+            o.norm1(U, AA11, transa='N')
+            o.reduce_(AA11, 'i')
+            o.divide(AA11, AA12, E)
+            o.sync_(U, 'i')
             o.dot_wrapper('mnk', X, U, MK11, transb='N', transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_(MK11, 'j')
+            o.reduce_(MK11, 'j')
             o.dot_wrapper('mkk', MK11, S, ML12, transb='N', transa='N')
             o.dot_wrapper('kmk', V, ML12, LL13, transb='N', transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0j(LL13)
-                o.sync_0j(LL13)
+            o.reduce_0j(LL13)
+            o.sync_0j(LL13)
             o.dot_wrapper('mkk', V, LL13, ML14, transb='N', transa='N')
             o.kernel_wrapper('mk', ML12, ML14, V)
             o.dot_wrapper('kmk', MK11, V, KL18, transb='N', transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0j(KL18)
+            o.reduce_0j(KL18)
             o.dot_wrapper('knk', U, U, KK19, transb='N', transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0i(KK19)
+            o.reduce_0i(KK19)
             o.dot_wrapper('kmk', V, V, LL20, transb='N', transa='T')
-            if it < 2 or self.sync == True:
-                o.reduce_0j(LL20)
+            o.reduce_0j(LL20)
             o.dot_wrapper('kkk', KK19, S, KL21, transb='N', transa='N')
             o.dot_wrapper('kkk', KL21, LL20, KL22, transb='N', transa='N')
             o.kernel_wrapper('kk', KL18, KL22, S)
         
-        self.operation.empty_sync_matrix(None, None, None)
-        
-        self.timer.stop()
-        
-        if debug:
-            dump_file('%s_%d' % (debug, self.rank), v.trace)
-        
         return h
-
-    def run_nmtf_ding_err(self, debug=None, print_err=False):
-        params = self.params
-        self.timer = Timer()
         
-        h = []
-        self.operation.load_kernel()
-        EPSILON = 10**(-9)
-        
-        data = self.storage
+    @factorization
+    def run_nmtf_ding_err(self, X=None, U=None, S=None, V=None, E=None, n=None, 
+        m=None, k=None, l=None, debug=None, print_err=False):
         o = self.operation
-        blocks_i, blocks_j = self.block_map
-        bid = blocks_i[0]
-        X = data['X']
-        U = data['U']
-        V = data['V']
-        S = data['S']
-        E = data['E']
-        
-        self.operation.bid = bid
-        n = self.dimensions['n'][bid]
-        m = self.dimensions['m'][bid]
-        k = self.dimensions['k'][bid]
-        l = self.dimensions['l'][bid]
-        
+        h = []
+    
         KM5 = o.zeros(k, m)
         NM6 = o.zeros(n, m)
         NM7 = o.zeros(n, m)
@@ -551,22 +557,37 @@ class Context(object):
         KL30 = o.zeros(k, l)
         KL31 = o.zeros(k, l)
         KL32 = o.zeros(k, l)
-                
+        notify = o.number(0)
         
         for it in range(self.max_iter):
-            #if it == 2:
-            #    self.operation.sync_matrix = self.operation.empty_sync_matrix
-            #    self.operation.mreduce = self.operation.empty_mreduce
-            #v.t2 = Timer()
+            o.it = it
+            if self.rank == 0 and self.check_stop(E=E):
+                notify = o.number(1)
+                o.sync_(notify, 'i')
+                o.sync_(notify, 'j')
+                self.number_of_iterations = it
+                
+            if notify.fetch()[0,0] == 1:
+                print "Stopping criteria reached after %d iterations" % it
+                break
+            
+            if it == 2 and self.sync == False:
+                self.operation.sync_matrix = self.operation.empty_sync_matrix
+                self.operation.mreduce = self.operation.empty_mreduce
+            
             if it == 2:
                 self.timer.split('main')
             
             if print_err:
-                e = E.fetch()
+                e = E.fetch(key=bid)
                 err = e[0,0]
+                
                 if self.rank == 0:
-                    print '%d,' % it, float(err)/1000
-                    h.append(err)
+                    if it == 0:
+                        print "Frobenius norm at iteration:"
+                    else:
+                        print '%d:' % it, float(err)
+                        h.append(err)
             
             o.sync_0j(S)
             o.dot_wrapper('kkm', S, V, KM5, transb='T', transa='N')
@@ -614,11 +635,5 @@ class Context(object):
             o.sqrt(KL31, KL32, transa='N')
             o.multiply(S, KL32, S)
         
-        self.operation.empty_sync_matrix(None, None, None)
-        
-        self.timer.stop()
-        
-        if debug:
-            dump_file('%s_%d' % (debug, self.rank), v.trace)
-        
         return h
+        

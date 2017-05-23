@@ -99,8 +99,11 @@ def measure_error(params):
     
     X1 = np.dot(np.dot(U, S), V.T)
     Q = (X - X1)
-    E = np.sum(Q * Q)
-    F = np.sum(X * X)
+    E = np.sum(np.multiply(Q, Q))
+    if type(X) == csr_matrix:
+        F = np.sum(X.multiply(X))
+    else:
+        F = np.sum(np.multiply(X, X))
     
     error = E / F
     print 'Frobenius norm:', error

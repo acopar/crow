@@ -249,7 +249,13 @@ def core():
     data_folder = params['data_folder']
     results_folder = params['results_folder']
     factor_cache = params['factor_cache']
+    
     rulefile = params['rulefile']
+    if params['error'] == True:
+        if rulefile == 'nmtf_long':
+            rulefile = 'nmtf_long_err'
+        elif rulefile == 'nmtf_ding':
+            rulefile = 'nmtf_ding_err'
     
     inputs = {'data': data_folder, 'method': rulefile, 'factors': factor_cache, 
         'index': params['blockmap_file']}
@@ -265,6 +271,8 @@ def core():
     
     dimensions = {}
     data = factorize.run(inputs, outputs, config, dimensions, flags=flags)
+    if not data:
+        return
     if comm.rank == 0:
         print 'Average iteration time:', data['itertime']
 

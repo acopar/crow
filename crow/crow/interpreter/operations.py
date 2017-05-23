@@ -55,7 +55,7 @@ def block_operation(f):
     return new_f
 
 class Operation(object):
-    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map):
+    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, sync=True):
         self.__dict__.update(locals())
         self.__dict__.pop('self', None)
         self.dot_mapper = {
@@ -83,6 +83,8 @@ class Operation(object):
             'm1n': self.dot_all,
             'nkn': self.dot_nkn
         }
+        self.it = 0
+        self.sync_flag = sync
     
     def dot_wrapper(self, dim, A, B, C, transa='N', transb='N', pos=None):
         func = None
@@ -188,6 +190,8 @@ class Operation(object):
         C.set(self.dot(A, B, C.get(), transa=transa, transb=transb))
 
     def sync_(self, A, axis):
+        if self.sync_flag == False and self.it >= 2:
+            return
         device_list = []
         source = None
         dev = self.rev_map
@@ -220,6 +224,8 @@ class Operation(object):
                 self.recv(A[bid], dev[source])
     
     def reduce_(self, A, axis, debug=False):
+        if self.sync_flag == False and self.it >= 2:
+            return
         device_list = []
         source = None
         dev = self.rev_map
@@ -294,6 +300,12 @@ class Operation(object):
     
     def zeros(self, x, y=0):
         return Matrix(self.zeros_function(x, y), key=self.bid)
+
+    def ones(self, x, y=0):
+        return Matrix(self.ones_function(x, y), key=self.bid)
+    
+    def number(self, x):
+        return Matrix(self.number_function(x), key=self.bid)
 
     def block_zeros(self, dim_x, dim_y, block_map, model='ij'):
         mat = None
