@@ -22,6 +22,8 @@ class CPUOperation(Operation):
         self.empty_sync_matrix = empty_cpu_sync_matrix
         self.empty_mreduce = empty_cpu_reduce
         self.zeros_function = npzeros
+        self.ones_function = npones
+        self.number_function = npnumber
         self.czeros = npzeros
         self.load_kernel = load_kernel
         

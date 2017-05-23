@@ -27,14 +27,22 @@ def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
             if select_method == 'nmtf_long':
                 c.run_nmtf_long(debug=flags['debug'], print_err=flags['error'])
             elif select_method == 'nmtf_long_err':
+                if flags['dense'] == False and context == 'gpu':
+                    print "Error function on GPU with sparse data is not supported"
+                    print "Try running without the error flag -e"
+                    return
                 c.run_nmtf_long_err(debug=flags['debug'], print_err=flags['error'])
             elif select_method == 'nmtf_ding':
                 c.run_nmtf_ding(debug=flags['debug'], print_err=flags['error'])
             elif select_method == 'nmtf_ding_err':
+                if flags['dense'] == False and context == 'gpu':
+                    print "Error function on GPU with sparse data is not supported"
+                    print "Try running without the error flag -e"
+                    return
                 c.run_nmtf_ding_err(debug=flags['debug'], print_err=flags['error'])
             clock = None
             if 'main' in c.timer.t:
-                clock = c.timer.t['main'] / (max_iter - 2)
+                clock = c.timer.t['main'] / c.number_of_iterations
             clock_list.append(clock)
     else:
         c.test_rules(debug=flags['debug'], print_err=flags['error'])

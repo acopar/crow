@@ -28,6 +28,8 @@ class GPUOperation(Operation):
         self.empty_sync_matrix = empty_gpu_sync_matrix
         self.empty_mreduce = empty_gpu_reduce
         self.zeros_function = gpuzeros
+        self.ones_function = gpuones
+        self.number_function = gpunumber
         self.czeros = npzeros
         self.load_kernel = load_kernel
         

@@ -20,6 +20,9 @@ def gpuzero_slices(slices, k):
 def gpuones(n, m):
     return togpu(np.ones((n,m)))
 
+def gpunumber(x):
+    return togpu(np.zeros((1,1)) + x)
+
 def gpuzeros_like(X):
     n, m = X.shape
     return gpuarray.zeros((n, m), dtype=np.float32, order='F')
