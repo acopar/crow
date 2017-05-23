@@ -26,10 +26,10 @@ RUN pip install cython
 
 # compile numpy with OpenBLAS support
 RUN git clone https://github.com/numpy/numpy
-RUN echo "[openblas]" >> numpy/site.cfg &&
-    echo "libraries = openblas" >> numpy/site.cfg &&
-    echo "library_dirs = /OpenBLAS/lib" >> numpy/site.cfg &&
-    echo "include_dirs = /OpenBLAS/include" >> numpy/site.cfg &&
+RUN echo "[openblas]" >> numpy/site.cfg && \
+    echo "libraries = openblas" >> numpy/site.cfg && \
+    echo "library_dirs = /OpenBLAS/lib" >> numpy/site.cfg && \
+    echo "include_dirs = /OpenBLAS/include" >> numpy/site.cfg && \
     echo "runtime_library_dirs = /OpenBLAS/lib" >> numpy/site.cfg
 
 RUN cd numpy && python setup.py config && \
