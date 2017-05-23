@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    docker exec -it crow_head_1 su -l
+else
+    docker exec -it crow_head_1 su -l -s /bin/bash -c "$*"
+fi
