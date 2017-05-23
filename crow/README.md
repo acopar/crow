@@ -128,3 +128,24 @@ The following options can be set:
 Arguments:
 
 - Single argument specifies path to data file. You can also provide basename of data files that exist in data directory.
+
+
+### Reproduction of results ###
+-------------------------------
+
+
+
+To download benchmark datasets, use the provided ``get_datasets.sh`` script.
+```
+    bash scripts/get_datasets.sh
+```
+
+To test the performance on benchmark dataset, for example 1-CPU, 1-GPU and 4-GPU configurations, use the following commands:
+
+```
+    crow -k1 20 data/ArrayExpress.coo
+    crow -g -k1 20 data/ArrayExpress.coo
+    crow -g -b 2x2 -k1 20 data/ArrayExpress.coo
+```
+
+Note that first run takes longer (up to a few minutes), since the program needs to read large files from disk and convert them to dense numpy or sparse matrices. Subsequent runs on the same data will load faster, because the data is cached. The performance may vary depending on your configuration.
