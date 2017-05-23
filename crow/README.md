@@ -1,93 +1,82 @@
-# CROW 
+# CROW: Fast Non-Negative Matrix Tri-Factorization
 
 A scalable implementation of non-negative matrix tri-factorization for multi-processor and multi-GPU environments.
 
 ## Quick Setup ###
 
-The most convenient way to setup the environment is to use provided docker images. Refer to the [Online documentation](https://crow.readthedocs.io/) for detailed explanation on how to setup your environment. Here is a quick setup guide.
+The most convenient way to setup the environment is to use provided docker images. Here is a quick setup guide for Ubuntu-based platforms. For other platforms and detailed setup instructions, please refer to the [Online documentation](https://crow.readthedocs.io/).
 
-#### CPU-only version
+#### Clone git repository
 
-First, clone the crow source repository.
 ```sh
-    git clone https://github.com/acopar/crow crow
+    git clone https://github.com/acopar/crow
     cd crow
-    nvidia-docker-compose up
 ```
 
-#### GPU-enabled version
+#### Install for CPU-only environment
 
-First, clone the crow source repository.
+This script skips CUDA and nvidia-docker installation. Useful for systems without CUDA-enabled GPU devices. This command also updates crow docker image to the latest version. 
+
 ```sh
-    git clone https://github.com/acopar/crow crow
-    cd crow
-    docker-compose up
+    make install
 ```
 
-#### Docker volumes
+#### Install for GPU environment
+
+```sh
+    make install-gpu
+```
+
+#### Start docker container
+
+This script checks if there are nvidia devices present, otherwise it falls back to CPU-only version. 
+
+```sh
+    crow-start
+```
+
+## Attach to a running container
+
+```sh
+    crow-exec
+```
+
+Alternatively, you can ssh into the container. You just need to check ssh port of the container with `docker ps`, or use the provided script `crow-ssh` that detects port automatically.
+
+```sh
+    crow-ssh
+```
+
+### Test your configuration
+
+Once you have the environment up and running, you can use this script to test if everything works correctly.
+
+```sh
+    crow-test
+```
+
+This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, use `-g` switch.
+
+```sh
+    crow-test -g
+```
+
+## Volumes and data
+
+### Docker volumes
 
 Crow docker images makes use of the following external volumes:
-- crow: path to the crow source code 
+- crow: path to the crow source code (for development)
 - data: path to directory with data, mounted read-only.
 - cache: path to directory, where the application stores intermediate files. 
 Note that cache can take several gigabytes, depending on your data. You can 
 safely clean this folder, but note that it may take some time to process the data again. 
 - results: this is where the factorized data will be stored.
 
-You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose tries to connect the volumes in current directory. Therefore, you can also use symbolic links and point to the directory where you want to store data, cache or results.
+You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose creates the folders in the current directory. Instead of editing docker-compose file you can also use symbolic links or mount to link data, cache or results to a different folder or device.
 
-You can do this by creating symbolic links or in the same directory as docker-compose.yml, for example:
-```sh
-    ln -s <path-to-your-data-folder> data
-    mkdir /tmp/crow-cache
-    ln -s /tmp/crow-cache cache
-    mkdir results
-```
+### Data format
 
-After you changed volume paths, you need to call docker-compose again.
-```sh
-    docker volume create --name=nvidia_driver_367.57
-    nvidia-docker-compose up
-```
-
-#### Connect to the container
-
-Now, you can connect to the running docker container:
-
-```
-    docker exec --it crow_head_1 /bin/bash
-```
-
-Alternatively, you can ssh into the container, you just need to check the correct ssh port with `docker ps`.
-
-```
-    ssh -p <container-ssh-port> mpirun@localhost
-```
-
-#### Run docker standalone
-
-If you run docker container as standalone application, instead of using `docker-compose`, 
-you need to provide path to external volumes manually. For GPU-enabled version refer to the `nvidia-docker-compose.yml` file (which is generated after initial `nvidia-docker-compose`) and provide all volumes and devices from command line. 
-
-```sh
-   docker run -v <source-dir>:/home/mpirun/crow 
-             -v <data-dir>:/home/mpirun/data:ro
-             -v <cache-dir>:/home/mpirun/cache 
-             -v <results-dir>:/home/mpirun/results
-             --rm -it acopar/crow /bin/bash
-```
-
-### Test your configuration ###
--------------------------------
-
-Once you have the environment up and running, you can use this script to test if everything works correctly.
-```sh
-    crow-test
-```
-This generates a small random dataset and tries to factorize it.
-
-### Data format ###
--------------------
 The data can be provided in coordinate list format (coo), which is a form of csv file, where each row describes one element in a matrix with row, column, value and header stores matrix dimensions. In header, we define matrix dimensions **n,m**. After that, each row of the file represents one non-zero value in the matrix. In each row, the first column represents index at first dimension **i**, second column index of second dimension **j** and third column represents the value of data matrix **X** at location X[i,j].
 
 For example, consider this 2D matrix:
@@ -102,36 +91,55 @@ Corresponding data file would look like this:
     1,1,5
 ```
 
-You can use provided tool `crow-conv` to conveniently convert between csv and coo formats.
+For convenient conversion between csv, npz and coo formats, `crow-conv` tool is provided in the docker image. Additional instructions can be found in [Data manipulation section](https://crow.readthedocs.io/en/latest/data.html).
 
-### Command line arguments ###
 
-The program takes the following arguments:
+## Factorize your data
 
-- -a: factorization rank, for example ``k=20``, or ``k=20,l=30`` if the factorization ranks are different.
+### Examples
+
+Serial configuration using one CPU core where both factorization ranks are 20.
+
+```
+    crow -k1 20 data.coo
+```
+
+Example usage for 4-GPU run with 2x2 block configuration and factorization rank 20.
+
+```
+    crow -g -b 2x2 -k1 20 data.coo
+```
+
+### Command line arguments
+
+The following options can be set:
+
 - -b: block configuration, for example 2x2.
 - -e: calculate and print error function in each iteration. This can slow down factorization considerably.
 - -g: use this argument to run on GPUs. By default, only CPU cores will be used.
+<<<<<<< HEAD
 - -i: maximum number of iterations, default is 10.
 - -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
 - -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. 
 - -s: Use sparse data structures. Do not use this if the matrix density is larger than 10%.
 - -t: additional stopping criteria, default is None. 
 - Last argument is path to data file.
+=======
+- -i: maximum number of iterations, default is 100.
+- -k1: left factorization rank. Defines number of latent vectors of matrix U.
+- -k2: right factorization rank. Defines number of latent vectors of matrix V. By default, value of k1 is used. 
+- -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
+- -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. 
+- -s: use sparse data structures. Do not use this if the matrix density is larger than 10%.
+- -t: additional stopping criteria. By default, factorization will run for number of iterations specified by -i.
 
+Arguments:
 
-### Usage examples ###
-
-Serial configuration using one core, run for 100 iterations.
-
-    crow -i 100 -a k=20 ../data/data.coo
-
-Example usage for 4-GPU run with 2x2 block configuration and factorization rank 20.
-
-    crow -g -p 4 -b 2x2 -a k=20 -i 100 ../data/data.coo
+- Single argument specifies path to data file. You can also provide basename of data files that exist in data directory.
 
 
 ### Reproduction of results ###
+-------------------------------
 
 To download benchmark datasets, use the provided ``get_datasets.sh`` script.
 ```

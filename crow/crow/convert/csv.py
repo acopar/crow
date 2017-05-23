@@ -75,7 +75,7 @@ def load_coo(filename, verbose=False):
         if value < 0:
             print 'Warning: setting negative value to zero, position (%d,%d)' % (i,j)
             value = 0.0
-        X[i,j] = r
+        X[i,j] = value
         it += 1
     
     fp.close()
@@ -115,14 +115,16 @@ def load_coo_sparse(filename, verbose=False):
     fp.close()
     n = n+1
     m = m+1
-
-    print N, n
-    print M, m
+    
+    if verbose == True:
+        print 'Number of rows', N, n
+        print 'Number of columns', M, m
     
     n, m = N, M
     
     t0 = time.time()
-    print 'Read in: ', t0-tz
+    if verbose == True:
+        print 'Read in: ', t0-tz
     data = np.array(vals, dtype=np.float32)
     X = csr_matrix((vals,(rows,cols)),shape=(n, m),dtype=np.float32)
     return X
@@ -130,6 +132,6 @@ def load_coo_sparse(filename, verbose=False):
 def write_dense_csv(filename, X, delimiter=','):
     fp = open(filename, 'w')
     writer = csv.writer(fp, delimiter=delimiter)
-    for i in range(n):
+    for i in range(X.shape[0]):
         writer.writerow(X[i,:])
     fp.close()

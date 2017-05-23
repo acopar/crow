@@ -99,7 +99,7 @@ def csv_tosparse_fast(filename, pklname):
     save_numpy(pklname, X)
     
 def csv_todense(filename, pklname):
-    load_coo(filename, verbose=True)
+    X = load_coo(filename, verbose=True)
     save_numpy(pklname, X)
 
 def dense_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)]):

@@ -36,15 +36,14 @@ class GPUOperation(Operation):
 
     
 class GPUContext(Context):
-    def __init__(self, inputs, dimensions, config, dense=False, test=False, sync=True):
+    def __init__(self, inputs, dimensions, config, flags):
         comm = MPI.COMM_WORLD
         rank = comm.rank
         size = comm.size
-        super(GPUContext,self).__init__(rank, size, inputs, dimensions, config, 
-            dense=dense, test=test, sync=sync)
+        super(GPUContext,self).__init__(rank, size, inputs, dimensions, config, flags)
         
         _bigdot = None
-        if dense == True:
+        if flags['dense'] == True:
             _bigdot = dot
         else:
             _bigdot = bigsparse

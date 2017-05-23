@@ -15,14 +15,14 @@ def get_dimension(dimensions, n, block):
         return dimensions[n]
 
 class Context(object):
-    def __init__(self, rank, size, inputs, dimensions, config, dense=False, test=False, sync=True):
+    def __init__(self, rank, size, inputs, dimensions, config, flags):
         self.dimensions = dimensions
-        self.dense = dense
-        self.test = test
+        self.dense = flags['dense']
+        self.test = flags['test']
         self.rank = rank
         self.size = size
-        self.sync = sync
-        
+        self.sync = flags['sync']
+        self.stop = flags['stop']
         
         self.max_iter = config['max_iter']
         self.balanced = True
@@ -346,12 +346,10 @@ class Context(object):
                 e = E.fetch(key=bid)
                 err = e[0,0]
                 
-                #err = v.loss_function(cpu_reduce, method='A') # TODO: Fix this to support multiple loss functions
-                #err = v.loss_function(cpu_reduce, method='3') # TODO: Fix this to support multiple loss functions
                 if self.rank == 0:
                     print '%d,' % it, float(err)/1000
                     h.append(err)
-            #t0 = time.time()
+            
             o.sync_0j(S)
             o.dot_wrapper('kkm', S, V, KM5, transb='T', transa='N')
             o.sync_(U, 'i')
@@ -395,13 +393,8 @@ class Context(object):
             o.divide(KL27, KL29, KL30)
             o.sqrt(KL30, KL31, transa='N')
             o.multiply(S, KL31, S)
-            
-            #v.run(ops, rank=self.rank, debug=debug)
-            #t1 = time.time()
-            #print 'Iter %d' % it, t1-t0
         
         self.operation.empty_sync_matrix(None, None, None)
-        
         self.timer.stop()
         
         if debug:
@@ -567,7 +560,6 @@ class Context(object):
             #v.t2 = Timer()
             if it == 2:
                 self.timer.split('main')
-
             
             if print_err:
                 e = E.fetch()
@@ -575,7 +567,7 @@ class Context(object):
                 if self.rank == 0:
                     print '%d,' % it, float(err)/1000
                     h.append(err)
-            #t0 = time.time()
+            
             o.sync_0j(S)
             o.dot_wrapper('kkm', S, V, KM5, transb='T', transa='N')
             o.sync_(U, 'i')

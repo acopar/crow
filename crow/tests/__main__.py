@@ -107,51 +107,6 @@ def run_setups(dataset, method, setups, k = (20,20), max_iter=100, init='random'
 def dataname_to_path(dataname):
     return to_path(DATA, dataname, '%s.csv' % dataname)
 
-def benchmark(argv):
-    sparse_map = {'ArrayExpress': False, 'TCGA-BRCA': False, 'fetus': True,
-        'retina-dense': False, 'cochlea-dense': False, 'retina': True, 'cochlea': True}
-    data_list = ['ArrayExpress', 'TCGA-BRCA', 'fetus', 'retina-dense', 'cochlea-dense']
-    data_list = ['ArrayExpress']
-    datasets = [(dataname_to_path(key), sparse_map[key]) for key in data_list]
-
-    method_list = ['nmtf_long']
-    update_rules = [(m, 'random') for m in method_list]
-    
-    block_map = {
-        'ArrayExpress': 'v',
-        'retina-dense': 'r',
-        'cochlea-dense': 'r',
-        'TCGA-BRCA': 'h',
-        'fetus': 'r'
-    }
-    
-    context = 'cpu'
-    u = False
-    setups = [{'blocks': (1,1), 'parallel': 1, 'context': context, 'unbalanced': u},
-            {'blocks': (2,1), 'parallel': 2, 'context': context, 'unbalanced': u},
-            {'blocks': (1,2), 'parallel': 2, 'context': context, 'unbalanced': u},
-            {'blocks': (4,1), 'parallel': 4, 'context': context, 'unbalanced': u},
-            {'blocks': (2,2), 'parallel': 4, 'context': context, 'unbalanced': u},
-            {'blocks': (1,4), 'parallel': 4, 'context': context, 'unbalanced': u}]
-    #setups = [{'blocks': (2,2), 'parallel': 4, 'context': context, 'unbalanced': u}]
-    
-    setups = [{'blocks': (3,2), 'parallel': 6, 'context': context}]
-    #setups = [{'blocks': (1,1), 'parallel': 1, 'context': context}]
-
-    k_list = [20]
-    for dataset in datasets:
-        for item in update_rules:
-            method = item[0]
-            sparse_support = method[1]
-            init = item[1]
-            if dataset[1] == True and sparse_support == False:
-                print 'Skipping sparse dataset %s with rules %s' % (dataset[0], rulefile)
-                continue
-            
-            for k1 in k_list:
-                k = (k1, k1)
-                run_setups(dataset[0], method, setups, k=k, max_iter=10, init=init, sync=True, sparse=dataset[1])
-
 def random_sparse(n, m, density=1.0):
     X = np.zeros((n,m), dtype=np.float32, order='C')
     for i in range(n):
@@ -173,10 +128,7 @@ def basic_test():
     setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'cpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
     
-    setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
-    run_setups(dataset, 'nmtf_long', setups, sparse=False)
-
-def large_test():
+def speedup_test():
     cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
     npzfile = to_path(cache_folder, '1_1', '0_0.npz')
     X = random_sparse(10000, 1000, density=1.0)
@@ -198,13 +150,13 @@ def large_test():
 def gpu_test():
     cache_folder = get_cache_folder('../data/test.coo', to_path(CACHE, 'data'))
     npzfile = to_path(cache_folder, '1_1', '0_0.npz')
-    X = random_sparse(10000, 10000, density=1.0)
+    X = random_sparse(1000, 1000)
     save_numpy(npzfile, X)
     
     dataset = 'test'
     setups = [{'blocks': (1,1), 'parallel': 1, 'context': 'gpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
-    
+
     setups = [{'blocks': (2,2), 'parallel': 4, 'context': 'gpu'}]
     run_setups(dataset, 'nmtf_long', setups, sparse=False)
 
@@ -222,10 +174,10 @@ def main():
         benchmark(argv)
     elif args.gpu:
         gpu_test()
+    elif args.speedup:
+        speedup_test()
     else:
         basic_test()
-        if args.speedup:
-            large_test()
 
     
 if __name__ == "__main__":
