@@ -232,6 +232,9 @@ class Context(object):
         KL23 = o.zeros(k, l)
         
         for it in range(self.max_iter):
+            if diff < 0.001:
+                print "Stop condition reached"
+                break
             if it == 2 and self.sync == False:
                 self.operation.sync_matrix = self.operation.empty_sync_matrix
                 self.operation.mreduce = self.operation.empty_mreduce

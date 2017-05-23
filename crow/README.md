@@ -112,11 +112,11 @@ The program takes the following arguments:
 - -b: block configuration, for example 2x2.
 - -e: calculate and print error function in each iteration. This can slow down factorization considerably.
 - -g: use this argument to run on GPUs. By default, only CPU cores will be used.
-- -i: maximum number of iterations, default is 100.
+- -i: maximum number of iterations, default is 10.
 - -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
 - -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. 
 - -s: Use sparse data structures. Do not use this if the matrix density is larger than 10%.
-- -t: additional stopping criteria, default is None.
+- -t: additional stopping criteria, default is None. 
 - Last argument is path to data file.
 
 
@@ -131,3 +131,19 @@ Example usage for 4-GPU run with 2x2 block configuration and factorization rank 
     crow -g -p 4 -b 2x2 -a k=20 -i 100 ../data/data.coo
 
 
+### Reproduction of results ###
+
+To download benchmark datasets, use the provided ``get_datasets.sh`` script.
+```
+    bash scripts/get_datasets.sh
+```
+
+To test the performance on benchmark dataset, for example 1-CPU, 1-GPU and 4-GPU configurations, use the following commands:
+
+```
+    crow -k1 20 data/ArrayExpress.coo
+    crow -g -k1 20 data/ArrayExpress.coo
+    crow -g -b 2x2 -k1 20 data/ArrayExpress.coo
+```
+
+Note that first run takes longer (up to a few minutes), since the program needs to read large files from disk and convert them to dense numpy or sparse matrices. Subsequent runs on the same data will load faster, because the data is cached. The performance may vary depending on your configuration.
