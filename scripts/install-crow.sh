@@ -10,6 +10,7 @@ DIRNAME=$(dirname $0)
 cd $DIRNAME
 sudo cp crow ${INSTALL_DIR}/crow
 sudo cp crow-exec ${INSTALL_DIR}/crow-exec
+sudo cp crow-sudo ${INSTALL_DIR}/crow-sudo
 sudo cp crow-ssh ${INSTALL_DIR}/crow-ssh
 sudo cp crow-start ${INSTALL_DIR}/crow-start
 

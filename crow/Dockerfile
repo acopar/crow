@@ -26,7 +26,7 @@ RUN pip install cython
 
 # compile numpy with OpenBLAS support
 RUN git clone https://github.com/numpy/numpy
-RUN printf "[openblas]\n" \
+RUN echo -e "[openblas]\n" \
 "libraries = openblas\n" \
 "library_dirs = /OpenBLAS/lib\n" \
 "include_dirs = /OpenBLAS/include\n" \
