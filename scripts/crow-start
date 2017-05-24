@@ -30,15 +30,15 @@ function run_gpu {
         docker volume create -d nvidia-docker --name=$VOLUME
     fi
     
-    nvidia-docker-compose up
+    nvidia-docker-compose up $*
 }
 
 function run_cpu {
-    docker-compose up
+    docker-compose up $*
 }
 
 if [ -e /dev/nvidiactl ]; then
-    run_gpu
+    run_gpu $*
 else
-    run_cpu
+    run_cpu $*
 fi
