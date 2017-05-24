@@ -2,7 +2,7 @@ FROM nvidia/cuda:8.0-devel
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update -y && apt-get install -y git openssh-server python-pip \
+RUN apt-get update -y && apt-get install -y git vim sudo openssh-server python-pip \
     python-virtualenv gcc gfortran binutils python-dev libffi-dev libzmq3-dev locate
 
 # compile openmpi with cuda support
@@ -69,7 +69,8 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 RUN mkdir /var/run/sshd
-#RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen
+RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+#&& locale-gen
 
 # Set environment variables
 #RUN echo '. /etc/profile.d/crow.sh' >> /etc/bash.bashrc
@@ -95,8 +96,8 @@ RUN virtualenv -p python --system-site-packages venv
 RUN echo 'cd ${HOME}' >> .profile
 RUN echo '. /etc/profile.d/crow.sh' >> .profile
 RUN echo '. ${HOME}/venv/bin/activate' >> .profile
-RUN git clone https://github.com/acopar/crow src
-RUN bash -c "source ~/venv/bin/activate && cd src/crow && python setup.py install"
+RUN git clone https://github.com/acopar/crow .
+RUN bash -c "source ~/venv/bin/activate && cd crow && python setup.py install"
 
 USER root
 WORKDIR /
