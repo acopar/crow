@@ -284,7 +284,6 @@ class Context(object):
         for it in range(self.max_iter):
             o.it = it
             if self.rank == 0 and self.check_stop(E=E):
-                print self.check_stop(E=E)
                 notify = o.number(1)
                 o.sync_(notify, 'i')
                 o.sync_(notify, 'j')
@@ -386,7 +385,7 @@ class Context(object):
                 self.timer.split('main')
 
             if print_err:
-                e = E.fetch(key=bid)
+                e = E.fetch()
                 err = e[0,0]
                 
                 if self.rank == 0:
@@ -579,7 +578,7 @@ class Context(object):
                 self.timer.split('main')
             
             if print_err:
-                e = E.fetch(key=bid)
+                e = E.fetch()
                 err = e[0,0]
                 
                 if self.rank == 0:
