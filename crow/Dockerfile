@@ -96,7 +96,8 @@ RUN virtualenv -p python --system-site-packages venv
 RUN echo 'cd ${HOME}' >> .profile
 RUN echo '. /etc/profile.d/crow.sh' >> .profile
 RUN echo '. ${HOME}/venv/bin/activate' >> .profile
-RUN git clone https://github.com/acopar/crow .
+RUN git clone https://github.com/acopar/crow src
+RUN mv src/.git* . && mv src/* .
 RUN bash -c "source ~/venv/bin/activate && cd crow && python setup.py install"
 
 USER root
