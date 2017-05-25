@@ -49,16 +49,16 @@ Alternatively, you can ssh into the container. You just need to check ssh port o
 
 ### Test your configuration
 
-Once you have the environment up and running, you can use this script to test if everything works correctly.
-
-```sh
-    crow-test
-```
-
-This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, use `-g` switch.
+Once you have the environment up and running, you can use `crow-test` script to test if everything works correctly. This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, use `-g` switch.
 
 ```sh
     crow-test -g
+```
+
+There is a helper script if you encounter permission troubles inside the container. This happens if your user id is not 1000 (use ``id -u`` to check your user id).
+
+```sh
+    scripts/user_permissions.sh
 ```
 
 ## Volumes and data
@@ -75,7 +75,22 @@ safely clean this folder, but note that it may take some time to process the dat
 
 You can modify the volume paths depending on where you store the data on your host system. This can be done by editing docker-compose.yml prior to `docker-compose` or `nvidia-docker-compose` call. By default, docker-compose creates the folders in the current directory. Instead of editing docker-compose file you can also use symbolic links or mount to link data, cache or results to a different folder or device.
 
-### Data format
+### Data
+
+To download preprocessed benchmark datasets, use the provided ``get_datasets.sh`` script.
+```
+    scripts/get_datasets.sh
+```
+
+This script downloads five datasets that have already been converted into coordinate list format:
+- [ArrayExpress](http://file.biolab.si/crow/ArrayExpress.coo): 22283x5896, file size: 3.5GB
+- [TCGA-BRCA](http://file.biolab.si/crow/TCGA-BRCA.coo): 1222x60483, file size: 1.5GB
+- [Fetus](http://file.biolab.si/crow/fetus.coo): 25569x25608, file size: 622M
+- [Retina](http://file.biolab.si/crow/retina.coo): 25823x25822, file size: 2.9GB
+- [Cochlea](http://file.biolab.si/crow/cochlea.coo): 25824x25824, file size: 5.6GB
+
+
+#### Data format
 
 The data can be provided in coordinate list format (coo), which is a form of csv file, where each row describes one element in a matrix with row, column, value and header stores matrix dimensions. In header, we define matrix dimensions **n,m**. After that, each row of the file represents one non-zero value in the matrix. In each row, the first column represents index at first dimension **i**, second column index of second dimension **j** and third column represents the value of data matrix **X** at location X[i,j].
 
@@ -91,24 +106,26 @@ Corresponding data file would look like this:
     1,1,5
 ```
 
-For convenient conversion between csv, npz and coo formats, `crow-conv` tool is provided in the docker image. Additional instructions can be found in [Data manipulation section](https://crow.readthedocs.io/en/latest/data.html).
+For convenient conversion between csv, npz and coo formats, ``crow-conv`` tool is provided in the docker image. Additional instructions can be found in [Data manipulation section](https://crow.readthedocs.io/en/latest/data.html).
 
 
 ## Factorize your data
 
 ### Examples
 
-Serial configuration using one CPU core where both factorization ranks are 20.
+Here, we demonstrate how to quickly factorize data on one of the provided datasets. To use different data, just replace the filename. Factorization rank (20 in these cases) is defined with '-k1' option. 
+
+For example: to factorize ArrayExpress dataset on 1-CPU, 1-GPU and 4-GPU (2x2 block) configurations, use the following commands:
 
 ```
-    crow -k1 20 data.coo
+    crow -k1 20 ArrayExpress.coo
+    crow -g -k1 20 ArrayExpress.coo
+    crow -g -b 2x2 -k1 20 ArrayExpress.coo
 ```
 
-Example usage for 4-GPU run with 2x2 block configuration and factorization rank 20.
+Once the process is finished, you will see average iteration time (seconds) and Frobenius norm error function. Factorized data is stored in results folder. 
 
-```
-    crow -g -b 2x2 -k1 20 data.coo
-```
+Note that first run takes longer (up to a few minutes), since the program needs to read large files from disk and convert them to dense numpy or sparse matrices. Subsequent runs on the same data will load faster, because the data is cached. More detailed information on how to reproduce and visualize the results can be found in the [Benchmark section](https://crow.readthedocs.io/en/latest/benchmark.html).
 
 ### Command line arguments
 
@@ -117,7 +134,7 @@ The following options can be set:
 - -b: block configuration, for example 2x2.
 - -e: calculate and print error function in each iteration. This can slow down factorization considerably. By default, any additional convergence tests (see stopping criteria) are performed against first norm of factor U.
 - -g: use this argument to run on GPUs. By default, only CPU cores will be used.
-- -i: maximum number of iterations, default is 100.
+- -i: maximum number of iterations, default is 10, but you should increase this number to get satisfactory results. 
 - -k1: left factorization rank. Defines number of latent vectors of matrix U.
 - -k2: right factorization rank. Defines number of latent vectors of matrix V. By default, value of k1 is used. 
 - -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
@@ -128,22 +145,3 @@ The following options can be set:
 Arguments:
 
 - Single argument specifies path to data file. You can also provide basename of data files that exist in data directory.
-
-
-### How to reproduce the results ###
--------------------------------
-
-To download benchmark datasets, use the provided ``get_datasets.sh`` script.
-```
-    bash scripts/get_datasets.sh
-```
-
-To test the performance on benchmark dataset, for example 1-CPU, 1-GPU and 4-GPU configurations, use the following commands:
-
-```
-    crow -k1 20 data/ArrayExpress.coo
-    crow -g -k1 20 data/ArrayExpress.coo
-    crow -g -b 2x2 -k1 20 data/ArrayExpress.coo
-```
-
-Note that first run takes longer (up to a few minutes), since the program needs to read large files from disk and convert them to dense numpy or sparse matrices. Subsequent runs on the same data will load faster, because the data is cached. The performance may vary depending on your configuration.

@@ -20,7 +20,16 @@ Requirements for GPU environments:
 * `nvidia-docker-compose <https://github.com/eywalker/nvidia-docker-compose>`_
 * `Python library yaml <https://wiki.python.org/moin/YAML>`_.
 
-If you don't have these programs installed, you can setup them using ``make``. Follow the :ref:`requirements setup guide <docker>` or links above for setup instructions of individual packages. 
+If you don't have these programs on the system, you can install them using ``make`` (see below). Follow the :ref:`requirements setup guide <docker>` or links above for setup instructions for manual install.
+
+Before you use ``make`` you need to clone the repository `crow git repository <https://github.com/acopar/crow>`_.
+
+::
+    
+    git clone https://github.com/acopar/crow && cd crow
+
+
+Provide one of the two arguments ``install`` or ``install-gpu``, which depend on whether CUDA-enabled GPUs are available on your system. 
 
 ::
 
@@ -28,12 +37,6 @@ If you don't have these programs installed, you can setup them using ``make``. F
     make install-gpu # install on a GPU system
 
 
-
-If you have not done so while installing the requirements, clone the `crow git repository <https://github.com/acopar/crow>`_.
-
-::
-    
-    git clone https://github.com/acopar/crow && cd crow
 
 
 Configuration
@@ -52,11 +55,11 @@ Open the ``docker-compose.yml`` directory and make sure that the mount directori
 Start containers
 ----------------
 
-Start the container with provided ``crow-start`` command. If you have any problems, check :ref:`manual setup guide <manual>`. To force CPU-only version on a system with GPUs available, you can explicitly call ``./RUN-CPU.sh``.
+Start the container with provided ``crow-start`` command. If you have any problems, check :ref:`manual setup guide <manual>`. To force CPU-only version on a system with GPUs available, you can explicitly call ``./RUN-CPU.sh``. To run docker container in background, use:
 
 ::
 
-    crow-start
+    crow-start -d
 
 
 Then connect to a container with ``crow-exec`` command.
@@ -86,11 +89,23 @@ Once you have the environment up and running, you can use this command to test i
     crow-test
 
 
-This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, use ``-g`` switch.
+This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, add ``-g`` switch.
 
 ::
     
     crow-test -g
+
+
+User permissions
+----------------
+
+Default user in docker image has user id 1000, which may differ from the id of your host user. To avoid permission trouble inside the container, run the following script:
+
+::
+
+    scripts/user_permissions.sh
+
+This must be re-run after you start a clean image and after each reinstall.
 
 
 Supported platforms

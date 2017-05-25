@@ -18,6 +18,7 @@ Crow is a multi-GPU and multi-CPU implementation of non-negative matrix tri-fact
    manual
    tutorial
    data
+   benchmark
    reference
 
 
