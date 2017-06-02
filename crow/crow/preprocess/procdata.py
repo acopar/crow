@@ -75,24 +75,19 @@ def balanced_slicing(input_file, output_folder, blocks=[]):
         X, islices, jslices = balanced_partition(S, nb, mb)
         for i in range(nb):
             for j in range(mb):
-                output_file = to_path(blockfolder, '%d_%d.npz' % (i, j))
+                output_file = to_path(blockfolder, 's%d_%d.npz' % (i, j))
                 save_numpy(output_file, X[i][j])
-                #meta_file = to_path(blockfolder, 'meta.pkl')
-                #dump_file(meta_file, (islices, jslices))
 
-def unbalanced_slicing(input_file, output_folder, blocks=[]):
+def imbalanced_slicing(input_file, output_folder, blocks=[]):
     # Sparse only
     S = load_numpy(input_file)
     for nb, mb in blocks:
-        blockfolder = to_path(output_folder, 'u%d_%d' % (nb, mb))
+        blockfolder = to_path(output_folder, '%d_%d' % (nb, mb))
         X = dummy_partition(S, nb, mb)
         for i in range(nb):
             for j in range(mb):
-                output_file = to_path(blockfolder, '%d_%d.npz' % (i, j))
+                output_file = to_path(blockfolder, 'i%d_%d.npz' % (i, j))
                 save_numpy(output_file, X[i][j])
-                #meta_file = to_path(blockfolder, 'meta.pkl')
-                #dump_file(meta_file, (islices, jslices))
-
 
 def csv_tosparse_fast(filename, pklname):
     X = load_coo_sparse(filename, verbose=True)
@@ -111,14 +106,14 @@ def dense_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)]):
     return data_folder
 
 def sparse_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)], balanced=True):
-    pkl_sparse = to_path(data_folder, '1_1', '0_0.npz')
+    pkl_sparse = to_path(data_folder, '1_1', 's0_0.npz')
     if not os.path.isfile(pkl_sparse):
         csv_tosparse_fast(data_file, pkl_sparse)
     
     if balanced == True:
         balanced_slicing(pkl_sparse, data_folder, blocks=blocks)
     else:
-        unbalanced_slicing(pkl_sparse, data_folder, blocks=blocks)
+        imbalanced_slicing(pkl_sparse, data_folder, blocks=blocks)
     return data_folder
 
 def dataset_to_blocks(data_file, cache_folder, blocks=[(2,1),(4,1)], sparse=False, balanced=True):
