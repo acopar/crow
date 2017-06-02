@@ -59,17 +59,14 @@ class Context(object):
         
         self.max_iter = config['max_iter']
         self.balanced = True
-        if config['unbalanced']:
+        if config['imbalanced']:
             self.balanced = False
         self.timer = Timer()
         self.nb = config['nb']
         self.mb = config['mb']
         self.multiplier = (1, 1)
         
-        if self.balanced == True:
-            self.data_folder = to_path(inputs['data'], '%d_%d' % (self.nb, self.mb))
-        else:
-            self.data_folder = to_path(inputs['data'], 'u%d_%d' % (self.nb, self.mb))
+        self.data_folder = to_path(inputs['data'], '%d_%d' % (self.nb, self.mb))
         self.factor_folder = inputs['factors']
 
         idx_file = inputs['index']
@@ -169,6 +166,11 @@ class Context(object):
             if data == True:
                 for v in data_vars:
                     filename = to_path(self.data_folder, '%d_%d.npz' % (idx, jdx))
+                    if self.dense == False:
+                        if self.balanced == True:
+                            filename = to_path(self.data_folder, 's%d_%d.npz' % (idx, jdx))
+                        else:
+                            filename = to_path(self.data_folder, 'i%d_%d.npz' % (idx, jdx))
                     #X, Xt = self.load_dataset(filename, self.dense)
                     X = self.load_data(filename, self.dense)
                     set_matrix(X, bid, v, sizes[v])

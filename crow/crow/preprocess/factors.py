@@ -4,7 +4,12 @@ from crow.utils import *
 def measure_data(folder, config, label=None):
     nb = config['nb']
     mb = config['mb']
-    unbalanced = config['unbalanced']
+    balanced = True
+    if config['imbalanced']:
+        balanced = False
+    dense = True
+    if config['sparse']:
+        dense = False
     
     N, M = 0, 0
     shapes = {}
@@ -17,8 +22,11 @@ def measure_data(folder, config, label=None):
     for i in range(nb):
         for j in range(mb):
             filename = to_path(folder, '%d_%d' % (nb, mb), '%d_%d.npz' % (i, j))
-            if unbalanced == True:
-                filename = to_path(folder, 'u%d_%d' % (nb, mb), '%d_%d.npz' % (i, j))
+            if dense == False:
+                if balanced == True: 
+                    filename = to_path(folder, '%d_%d' % (nb, mb), 's%d_%d.npz' % (i, j))
+                else:
+                    filename = to_path(folder, '%d_%d' % (nb, mb), 'i%d_%d.npz' % (i, j))
             if not os.path.isfile(filename):
                 print 'Warning: Dataset file not found: %s' % filename
                 mask[(i,j)] = 1
@@ -51,7 +59,6 @@ def measure_data(folder, config, label=None):
 
 def data_analyze(cache_folder, factor_folder, config, dimensions, matrices):
     init = config['init']
-    unbalanced = config['unbalanced']
     block_mask = {}
     data = False
     slices = None

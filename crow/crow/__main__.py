@@ -62,6 +62,7 @@ def main():
     
     # Debugging flags
     parser.add_argument("-V", "--Verbose", help='Verbosity', action="store_true")
+    parser.add_argument("--no-transfer", help="No data transfer (benchmark only)", action="store_true")
     
     parser.add_argument('args', nargs=1, help='Other args')
     args = parser.parse_args()
@@ -103,9 +104,14 @@ def main():
         else:
             arguments = 'k=10,l=10'
     
+    sync = True
+    if args.no_transfer:
+        sync = False
+    
     params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'arguments': arguments, 
         'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': rulefile, 
-        'init': args.init, 'unbalanced': args.imbalanced, 'verbose': args.Verbose, 'force': args.force,
+        'init': args.init, 'imbalanced': args.imbalanced, 'sync': sync,
+        'verbose': args.Verbose, 'force': args.force,
         'data_file': data_file, 'stop': args.stop}
     
     run_wrapper(params)
@@ -127,7 +133,7 @@ def run_wrapper(params, merge=True):
     
     template = {'blocks': (1,1), 'sparse': False, 'max_iter': 100, 'context': 'cpu', 'sync': True,
         'arguments': 'k=20,l=20', 'parallel': 1, 'rulefile': 'nmtf_long', 'init': 'random', 
-        'multiplier': 1, 'error': True, 'override': False, 'debug': None, 'test': False, 'unbalanced': False,
+        'multiplier': 1, 'error': True, 'override': False, 'debug': None, 'test': False, 'imbalanced': False,
         'data_folder': data_folder, 'data_file': data_file, 'factor_folder': factor_folder, 
         'results_folder': results_folder, 'output_folder': output_folder, 'factor_cache': factor_cache,
         'blockmap_file': blockmap_file, 'stop': ''
@@ -150,7 +156,7 @@ def get_config(params):
     nb, mb = params['blocks']
     
     context = params['context']
-    sync = True
+    sync = params['sync']
     
     if context == 'epu':
         context = 'cpu'
@@ -160,14 +166,14 @@ def get_config(params):
         context = 'gpu'
         sync = False
     
-    unbalanced = False
-    if params['unbalanced']:
+    imbalanced = False
+    if params['imbalanced']:
         if params['parallel'] > 1 and params['sparse']:
-            unbalanced = True
+            imbalanced = True
     
     d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': 0, 
-        'unbalanced': unbalanced, 'init': params['init'], 'parallel': params['parallel'], 
-        'context': context, 'multiplier': params['multiplier']}
+        'sparse': params['sparse'], 'imbalanced': imbalanced, 'init': params['init'], 
+        'parallel': params['parallel'], 'context': context, 'multiplier': params['multiplier']}
     return d
 
 def data_cache_module(params):
@@ -182,7 +188,7 @@ def data_cache_module(params):
     config = get_config(params)
     
     balanced = True
-    if config['unbalanced']:
+    if config['imbalanced']:
         balanced = False
     
     data_folder = procdata.dataset_to_blocks(data_file, cache_folder, blocks=[(nb,mb)], sparse=params['sparse'], balanced=balanced)
@@ -222,7 +228,7 @@ def blockmap_init_module(params):
     config = get_config(params)
     factor_folder = params['factor_folder']
     idx_file = params['blockmap_file']
-    blockmap.generate_blockmap(config, factor_folder, idx_file)    
+    blockmap.generate_blockmap(config, factor_folder, idx_file)
 
 def run():
     try:
