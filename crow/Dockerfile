@@ -65,12 +65,13 @@ RUN echo "${USERNAME}:${USERNAME}" | chpasswd
 
 # ssh configuration
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 RUN mkdir /var/run/sshd
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
-#&& locale-gen
+# Skipped for compatibility with automatic build && locale-gen
 
 # Set environment variables
 #RUN echo '. /etc/profile.d/crow.sh' >> /etc/bash.bashrc
@@ -85,9 +86,9 @@ USER ${USERNAME}
 ENV SSHDIR ${HOME}/.ssh/
 RUN mkdir -p ${SSHDIR}
 
-RUN echo "StrictHostKeyChecking no" >> ${SSHDIR}/config
-RUN ssh-keygen -f "${SSHDIR}/id_rsa" -N '' -t rsa -b 2048
-RUN cp ${SSHDIR}/id_rsa.pub ${SSHDIR}/authorized_keys
+# Uncomment this to simplify automatic connections with other containers
+# RUN echo "StrictHostKeyChecking no" >> ${SSHDIR}/config
+# RUN echo "UserKnownHostsFile /dev/null" >> ${SSHDIR}/config
 
 # Prepare virtual environment and install crow
 WORKDIR ${HOME}
@@ -108,6 +109,8 @@ RUN echo "from cuda_cffi import cusparse" >> build_cusparse.py
 
 COPY start.sh start.sh
 RUN chmod a+x start.sh
+COPY users.sh users.sh
+COPY keys.sh keys.sh
 
 EXPOSE 22
 CMD ["/start.sh"]
