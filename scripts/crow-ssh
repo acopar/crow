@@ -1,12 +1,22 @@
 #!/bin/bash
 
-PORT=$(docker ps -f name=crow_head_1 --format '{{.Ports}}' | sed 's/.*:\([0-9]*\)->.*/\1/g')
+NAME="crow_head_1"
+PORT=$(docker ps -f name=$NAME --format '{{.Ports}}' | sed 's/.*:\([0-9]*\)->.*/\1/g')
+SSHKEY=~/.ssh/crow
+
+if [[ -z "$PORT" ]]; then
+    echo "Unable to extract docker image ssh port."
+    echo "Check if container named $NAME is running (docker ps)."
+    echo "Use crow-start to start the container."
+    exit 1
+fi
 
 if [ -n $PORT ]; then
 
     if [ $# -eq 0 ]; then
-        ssh -p $PORT crow@localhost
+        # Gets rid of authenticity warning (local docker containers are trusted)
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $PORT -i "$SSHKEY" crow@localhost
     else
-        ssh -p $PORT crow@localhost "source ~/.profile && $*"
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p $PORT -i "$SSHKEY" crow@localhost "source ~/.profile && $*"
     fi
 fi

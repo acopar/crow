@@ -10,4 +10,4 @@ install-gpu:
 	./INSTALL_GPU.sh
 
 uninstall:
-	cd /usr/local/bin/ && rm crow crow-test crow-conv crow-exec crow-ssh
+	cd /usr/local/bin/ && rm crow crow-test crow-conv crow-exec crow-ssh crow-sudo
