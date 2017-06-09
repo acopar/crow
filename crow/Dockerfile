@@ -106,9 +106,7 @@ WORKDIR /
 # prepare first run for cuda-cffi
 RUN echo "from cuda_cffi import cusparse" >> build_cusparse.py
 
-
 COPY start.sh start.sh
-RUN chmod a+x start.sh
 COPY users.sh users.sh
 COPY keys.sh keys.sh
 

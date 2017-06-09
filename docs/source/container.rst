@@ -73,14 +73,9 @@ If you used one of the install scripts, shortcuts were copied into your path, an
     crow-exec
     crow-ssh
 
-Default ssh password for docker container is crow. Change this password if you decide to open the container's ssh port to the public. If this works, you can proceed to the :ref:`Tutorial <tutorial>`.
+
+If this works, you can proceed to the :ref:`Tutorial <tutorial>`.
 
 
-If these commands are missing, you just need to run ``scripts/install-crow.sh`` or use this script, which is provided in the project home folder:
-
-::
-
-    ./CONNECT.sh
-
-If this fails, check the output of ``docker ps`` to see if the container is running. You may need to run ``crow-start`` again. 
+If these commands are missing, you most likely just need to run ``scripts/install-crow.sh``. If this fails, check the output of ``docker ps`` to see if the container is running. You may need to run ``crow-start`` again. 
 

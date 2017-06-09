@@ -3,6 +3,21 @@
 Host requirements
 =================
 
+Docker install requirements for all environments:
+
+* `docker >= 1.12.9 <https://docs.docker.com/engine/installation>`_
+* `docker-compose >= 1.9.0 <https://docs.docker.com/compose/install/>`_
+
+Requirements for GPU environments:
+
+* `CUDA >= 8.0 <https://developer.nvidia.com/cuda-downloads>`_
+* `nvidia-docker >= 1.0.1 <https://github.com/NVIDIA/nvidia-docker>`_
+* `nvidia-docker-compose <https://github.com/eywalker/nvidia-docker-compose>`_
+* `Python library yaml <https://wiki.python.org/moin/YAML>`_.
+
+If you don't have these programs on the system, you can install them using ``make`` (see below) or follow the links above to install them manually. Note that you still need to call ``make`` to install crow-specific entry points, user and group configuration and ssh keys.
+
+
 Quick setup
 -----------
 
@@ -11,6 +26,7 @@ You can use the provided install scripts to setup requirements automatically. Cu
 ::
     
     git clone https://github.com/acopar/crow && cd crow
+
 
 For machines without CUDA-enabled GPU devices, use CPU version.
 
@@ -126,4 +142,14 @@ In order to execute docker commands as a regular user, you need to be in docker 
 Troubleshooting
 ---------------
 
-If these instructions fail, post a `issue on github <https://github.com/acopar/crow/issues>`_ so we can update them.
+Default user in docker image has user id 1000, which may differ from the id of your host user. To avoid permission trouble inside the container, run the following script:
+
+::
+
+    scripts/user_permissions.sh
+
+
+This must be re-run after you start a clean image and after each reinstall.
+
+
+If additional problems occur, post a `issue on github <https://github.com/acopar/crow/issues>`_ so we can fix them.
