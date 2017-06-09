@@ -29,7 +29,8 @@ This script skips CUDA and nvidia-docker installation. Useful for systems withou
 
 #### Start docker container
 
-This script checks if there are nvidia devices present, otherwise it falls back to CPU-only version. 
+This script checks if there are nvidia devices present, otherwise it falls back to CPU-only version (use `-d` option to put the process in the background). See [Setup guide](https://crow.readthedocs.io/en/latest/install.html) for details.
+
 
 ```sh
     crow-start
@@ -37,15 +38,13 @@ This script checks if there are nvidia devices present, otherwise it falls back 
 
 ## Attach to a running container
 
+To get inside the container use `crow-exec` or `crow-ssh`.
+
 ```sh
     crow-exec
 ```
 
-Alternatively, you can ssh into the container. You just need to check ssh port of the container with `docker ps`, or use the provided script `crow-ssh` that detects port automatically.
-
-```sh
-    crow-ssh
-```
+Check [this section](https://crow.readthedocs.io/en/latest/connect.html) if you encounter any problems with connection. 
 
 ### Test your configuration
 
@@ -53,12 +52,6 @@ Once you have the environment up and running, you can use `crow-test` script to 
 
 ```sh
     crow-test -g
-```
-
-There is a helper script if you encounter permission troubles inside the container. This happens if your user id is not 1000 (use ``id -u`` to check your user id).
-
-```sh
-    scripts/user_permissions.sh
 ```
 
 ## Volumes and data

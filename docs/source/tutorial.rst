@@ -3,7 +3,7 @@
 Tutorial
 ========
 
-The application reads the provided ``coo`` file into data matrix *X*. Then it the data into three non-negative latent factors, such that:
+The application reads the provided ``coo`` file into data matrix *X* (see :ref:`data manipulation <data_manipulation>` on how to structure such file). Then it the data into three non-negative latent factors, such that:
 
 .. math::
     

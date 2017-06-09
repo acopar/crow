@@ -8,19 +8,7 @@ Setup guide
 
 We recommend building and running CROW with docker to avoid recompiling libraries manually. If you want to install on host server directly, follow the :ref:`Manual setup <manual>`.
 
-Docker install requirements for all environments:
 
-* `docker >= 1.12.9 <https://docs.docker.com/engine/installation>`_
-* `docker-compose >= 1.9.0 <https://docs.docker.com/compose/install/>`_
-
-Requirements for GPU environments:
-
-* `CUDA >= 8.0 <https://developer.nvidia.com/cuda-downloads>`_
-* `nvidia-docker >= 1.0.1 <https://github.com/NVIDIA/nvidia-docker>`_
-* `nvidia-docker-compose <https://github.com/eywalker/nvidia-docker-compose>`_
-* `Python library yaml <https://wiki.python.org/moin/YAML>`_.
-
-If you don't have these programs on the system, you can install them using ``make`` (see below). Follow the :ref:`requirements setup guide <docker>` or links above for setup instructions for manual install.
 
 Before you use ``make`` you need to clone the repository `crow git repository <https://github.com/acopar/crow>`_.
 
@@ -37,10 +25,69 @@ Provide one of the two arguments ``install`` or ``install-gpu``, which depend on
     make install-gpu # install on a GPU system
 
 
+In case of any problems, check your dependencies and follow the :ref:`requirements setup guide <docker>`.
+
+Start containers
+----------------
+
+Start the container with provided ``crow-start`` command. If you have any problems, check :ref:`manual setup guide <manual>`. To force CPU-only version on a system with GPUs available, you can explicitly call ``./RUN-CPU.sh``. To run docker container in the background, use:
+
+::
+
+    crow-start -d
 
 
-Configuration
--------------
+.. _connect:
+
+Connect to a running container
+------------------------------
+
+Then connect to a container with either ``crow-exec``, like this:
+
+::
+
+    crow-exec
+
+
+Alternatively, you can ssh into the container. For login, ``crow-ssh`` uses dedicated identity files that are located at ~/.ssh/crow and ~/.ssh/crow.pub. The keys should be generated during installation and the public key should be copied authorized within the container automatically. If this fails for any reason, copy your public key to ``.ssh/authorized_keys`` inside the container.
+
+::
+
+    crow-ssh
+
+
+You can login into container as admin like this:
+
+::
+
+    crow-sudo
+
+
+If the above commands are not found, try to reinstall the application ``scripts/install-crow.sh`` or move to ``scripts`` folder and call them directly. Once inside docker the container, follow the :ref:`Tutorial <tutorial>` on how to use NMTF on your data. 
+
+
+Test run
+--------
+
+Once you have the environment up and running, you can use this command to test if everything works correctly.
+
+::
+    
+    crow-test
+
+
+This command generates a small random dataset and tries to factorize it. To test factorization with GPUs, add ``-g`` switch.
+
+::
+    
+    crow-test -g
+
+
+Documentation for more in-depth benchmarks is found here :ref:`Benchmark <benchmark>`.
+
+
+Location of data and results
+----------------------------
 
 Crow docker images makes use of the following external volumes. 
 
@@ -52,62 +99,7 @@ Crow docker images makes use of the following external volumes.
 Open the ``docker-compose.yml`` directory and make sure that the mount directories point to the desired locations. By default, mount points for each volume points to a folder in the current working directory. Refer to the :ref:`data section  <data>` for more information. 
 
 
-Start containers
-----------------
-
-Start the container with provided ``crow-start`` command. If you have any problems, check :ref:`manual setup guide <manual>`. To force CPU-only version on a system with GPUs available, you can explicitly call ``./RUN-CPU.sh``. To run docker container in background, use:
-
-::
-
-    crow-start -d
-
-
-Then connect to a container with ``crow-exec`` command.
-
-::
-
-    crow-exec
-
-Alternatively, you can connect to the container with ssh, using ``crow-ssh`` command. 
-
-::
-    
-    crow-ssh
-
-
-If the above commands are not found, try to reinstall the application ``scripts/install-crow.sh`` or move to ``scripts`` folder and call them directly. Once inside docker the container, follow the :ref:`Tutorial <tutorial>` on how to use NMTF on your data. 
-
-
-Test run
---------
-
-
-Once you have the environment up and running, you can use this command to test if everything works correctly.
-
-::
-    
-    crow-test
-
-
-This generates a small random dataset and tries to factorize it. To test factorization using GPU environment, add ``-g`` switch.
-
-::
-    
-    crow-test -g
-
-
-User permissions
-----------------
-
-Default user in docker image has user id 1000, which may differ from the id of your host user. To avoid permission trouble inside the container, run the following script:
-
-::
-
-    scripts/user_permissions.sh
-
-This must be re-run after you start a clean image and after each reinstall.
-
-
 Supported platforms
 -------------------
+
 This software has been developed and tested for Linux platform. The provided docker images should also work on other platforms. Follow the `official instructions <https://docs.docker.com/engine/installation>`_ on how to set up docker environment for your platform.
