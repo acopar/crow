@@ -44,7 +44,7 @@ To get inside the container use `crow-exec` or `crow-ssh`.
     crow-exec
 ```
 
-Check [this section](https://crow.readthedocs.io/en/latest/connect.html) if you encounter any problems with connection. 
+Check [this section](https://crow.readthedocs.io/en/latest/install.html#connect) if you encounter any problems with connection. 
 
 ### Test your configuration
 
