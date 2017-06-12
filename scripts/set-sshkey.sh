@@ -12,5 +12,7 @@ if [[ ! -d "$DST" ]]; then
     exit 1
 fi
 
-ssh-keygen -f ~/.ssh/crow -N '' -t rsa -b 2048
+if [[ ! -f ~/.ssh/crow ]]; then
+    ssh-keygen -f ~/.ssh/crow -N '' -t rsa -b 2048
+fi
 cp ~/.ssh/crow.pub "$DST/authorized_keys"

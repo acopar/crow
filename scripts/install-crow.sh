@@ -13,6 +13,7 @@ sudo cp crow-exec ${INSTALL_DIR}/crow-exec
 sudo cp crow-sudo ${INSTALL_DIR}/crow-sudo
 sudo cp crow-ssh ${INSTALL_DIR}/crow-ssh
 sudo cp crow-start ${INSTALL_DIR}/crow-start
+sudo cp nvidia_get_volume.py ${INSTALL_DIR}/crow-nvidia-version
 
 cd ${INSTALL_DIR}
 sudo chmod +x crow crow-exec crow-ssh crow-start
