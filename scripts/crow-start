@@ -1,16 +1,18 @@
 #!/bin/bash
 
 function run_gpu {
-    if [ -e "scripts/nvidia_get_volume.py" ]; then
+    if [[ $(which crow-nvidia-version) ]]; then
+        vscript="crow-nvidia-version"
+        VOLUME=$(crow-nvidia-version)
+    elif [ -e "scripts/nvidia_get_volume.py" ]; then
         vscript="scripts/nvidia_get_volume.py"
+        VOLUME=$(python $vscript)
     else
         echo "Volume query script not found"
         echo "Try running scripts/install-crow.sh"
     fi
     
-    if [ $vscript ]; then
-        VOLUME=$(python $vscript)
-    else
+    if [[ -z "$VOLUME" ]]; then
         echo -n "Write nvidia driver version (ex. 367.57), empty to abort: "
         read version
         if [ -z "$version" ]; then
@@ -18,6 +20,7 @@ function run_gpu {
         fi
         VOLUME="nvidia_driver_$version"
     fi
+    
     if [ -z $VOLUME ]; then
         echo "No nvidia volume found"
         echo "Perhaps nvidia-docker-plugin is not running?"
