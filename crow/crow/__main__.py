@@ -257,11 +257,6 @@ def core():
     factor_cache = params['factor_cache']
     
     rulefile = params['rulefile']
-    if params['error'] == True:
-        if rulefile == 'nmtf_long':
-            rulefile = 'nmtf_long_err'
-        elif rulefile == 'nmtf_ding':
-            rulefile = 'nmtf_ding_err'
     
     inputs = {'data': data_folder, 'method': rulefile, 'factors': factor_cache, 
         'index': params['blockmap_file']}

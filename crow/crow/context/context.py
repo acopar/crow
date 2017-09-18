@@ -237,7 +237,6 @@ class Context(object):
         if E is not None:
             self.now = E.fetch()[0,0]
         
-        
         if self.stop == 'e4':
             if np.abs(self.prev - self.now) < 10**(-4):
                 return True
@@ -255,310 +254,45 @@ class Context(object):
                 return True
         self.prev = self.now
     
+
     @factorization
     def run_nmtf_long(self, X=None, U=None, S=None, V=None, E=None, n=None, 
         m=None, k=None, l=None, debug=None, print_err=False):
         o = self.operation
         h = []
-        
-        MK4 = o.zeros(m, k)
-        NK5 = o.zeros(n, k)
-        KK6 = o.zeros(k, k)
-        NK7 = o.zeros(n, k)
-        NK8 = o.zeros(n, k)
-        NK9 = o.zeros(n, k)
-        MK11 = o.zeros(m, k)
-        ML12 = o.zeros(m, l)
-        KK13 = o.zeros(k, k)
-        KL14 = o.zeros(k, l)
-        ML15 = o.zeros(m, l)
-        ML16 = o.zeros(m, l)
-        ML17 = o.zeros(m, l)
-        KL19 = o.zeros(k, l)
-        LL20 = o.zeros(l, l)
-        KL21 = o.zeros(k, l)
-        KL22 = o.zeros(k, l)
-        KL23 = o.zeros(k, l)
-        notify = o.number(0)
-        AA11 = o.zeros(1,1)
-        AA12 = o.number(n*k)
-        
-        for it in range(self.max_iter):
-            o.it = it
-            if self.rank == 0 and self.check_stop(E=E):
-                notify = o.number(1)
-                o.sync_(notify, 'i')
-                o.sync_(notify, 'j')
-                self.number_of_iterations = it
-                
-            if notify.fetch()[0,0] == 1:
-                print "Stopping criteria reached after %d iterations" % it
-                break
-            
-            if it == 2 and self.sync == False:
-                o.sync_matrix = o.empty_sync_matrix
-                o.mreduce = o.empty_mreduce
-            
-            if it == 2:
-                self.timer.split('main')
-            
-            o.sync_0j(S)
-            o.dot_wrapper('mkk', V, S, MK4, transb='T')
-            o.sync_(MK4, 'j')
-            o.dot_wrapper('nmk', X, MK4, NK5)
-            o.reduce_(NK5, 'i')
-            o.dot_wrapper('kmk', MK4, MK4, KK6, transa='T')
-            o.reduce_0j(KK6)
-            o.sync_0i(KK6)
-            o.dot_wrapper('nkk', U, KK6, NK7)
-            o.kernel_wrapper('nk', NK5, NK7, U)
-            o.norm1(U, AA11, transa='N')
-            o.reduce_(AA11, 'i')
-            o.divide(AA11, AA12, E)
-            o.sync_(U, 'i')
-            o.dot_wrapper('mnk', X, U, MK11, transa='T')
-            o.reduce_(MK11, 'j')
-            o.dot_wrapper('mkk', MK11, S, ML12)
-            o.dot_wrapper('knk', U, U, KK13, transa='T')
-            o.reduce_0i(KK13)
-            o.dot_wrapper('kkk', KK13, S, KL14)
-            o.sync_0j(KL14)
-            o.dot_wrapper('mkk', MK4, KL14, ML15)
-            o.kernel_wrapper('mk', ML12, ML15, V)
-            o.dot_wrapper('kmk', MK11, V, KL19, transa='T')
-            o.reduce_0j(KL19)
-            o.dot_wrapper('kmk', V, V, LL20, transa='T')
-            o.reduce_0j(LL20)
-            o.dot_wrapper('kkk', KL14, LL20, KL21)
-            o.kernel_wrapper('kk', KL19, KL21, S)
-        
-        return h
     
-    
-    @factorization
-    def run_nmtf_long_err(self, X=None, U=None, S=None, V=None, E=None, n=None, 
-        m=None, k=None, l=None, debug=None, print_err=False):
-        o = self.operation
-        h = []
-        
-        KM5 = o.zeros(k, m)
-        NM6 = o.zeros(n, m)
-        NM7 = o.zeros(n, m)
+        AA5 = o.zeros(1, 1)
+        AA6 = o.number(1)
+        AA7 = o.number(2)
         NM8 = o.zeros(n, m)
-        AA9 = o.zeros(1, 1)
-        NM10 = o.zeros(n, m)
-        AA11 = o.zeros(1, 1)
-        NK13 = o.zeros(n, k)
-        KK14 = o.zeros(k, k)
-        NK15 = o.zeros(n, k)
-        NK16 = o.zeros(n, k)
-        NK17 = o.zeros(n, k)
-        MK19 = o.zeros(m, k)
-        ML20 = o.zeros(m, l)
-        KK21 = o.zeros(k, k)
-        KL22 = o.zeros(k, l)
-        ML23 = o.zeros(m, l)
-        ML24 = o.zeros(m, l)
-        ML25 = o.zeros(m, l)
-        KL27 = o.zeros(k, l)
-        LL28 = o.zeros(l, l)
-        KL29 = o.zeros(k, l)
-        KL30 = o.zeros(k, l)
-        KL31 = o.zeros(k, l)
-        notify = o.number(0)
-        
-        for it in range(self.max_iter):
-            o.it = it
-            if self.rank == 0 and self.check_stop(E=E):
-                notify = o.number(1)
-                o.sync_(notify, 'i')
-                o.sync_(notify, 'j')
-                self.number_of_iterations = it
-            
-            if notify.fetch()[0,0] == 1:
-                print "Stopping criteria reached after %d iterations" % it
-                break
-            
-            if it == 2 and self.sync == False:
-                o.sync_matrix = o.empty_sync_matrix
-                o.mreduce = o.empty_mreduce
-            
-            if it == 2:
-                self.timer.split('main')
-
-            if print_err:
-                e = E.fetch()
-                err = e[0,0]
-                
-                if self.rank == 0:
-                    if it == 0:
-                        print "Frobenius norm at iteration:"
-                    else:
-                        print '%d:' % it, float(err)
-                        h.append(err)
-            
-            
-            o.sync_0j(S)
-            o.dot_wrapper('kkm', S, V, KM5, transb='T', transa='N')
-            o.sync_(U, 'i')
-            o.sync_(KM5, 'j')
-            o.dot_wrapper('nkm', U, KM5, NM6, transb='N', transa='N')
-            o.sub(X, NM6, NM7)
-            o.square(NM7, NM8, transa='N')
-            o.norm1(NM8, AA9, transa='N')
-            o.reduce_(AA9, 'ij')
-            o.square(X, NM10, transa='N')
-            o.norm1(NM10, AA11, transa='N')
-            o.reduce_(AA11, 'ij')
-            o.divide(AA9, AA11, E)
-            o.sync_(KM5, 'j')
-            o.dot_wrapper('nmk', X, KM5, NK13, transb='T', transa='N')
-            o.reduce_(NK13, 'i')
-            o.dot_wrapper('kmk', KM5, KM5, KK14, transb='T', transa='N')
-            o.reduce_0j(KK14)
-            o.sync_0i(KK14)
-            o.dot_wrapper('nkk', U, KK14, NK15, transb='N', transa='N')
-            o.divide(NK13, NK15, NK16)
-            o.sqrt(NK16, NK17, transa='N')
-            o.multiply(U, NK17, U)
-            o.sync_(U, 'i')
-            o.dot_wrapper('mnk', X, U, MK19, transb='N', transa='T')
-            o.reduce_(MK19, 'j')
-            o.dot_wrapper('mkk', MK19, S, ML20, transb='N', transa='N')
-            o.dot_wrapper('knk', U, U, KK21, transb='N', transa='T')
-            o.reduce_0i(KK21)
-            o.dot_wrapper('kkk', KK21, S, KL22, transb='N', transa='N')
-            o.sync_0j(KL22)
-            o.dot_wrapper('mkk', KM5, KL22, ML23, transb='N', transa='T')
-            o.divide(ML20, ML23, ML24)
-            o.sqrt(ML24, ML25, transa='N')
-            o.multiply(V, ML25, V)
-            o.dot_wrapper('kmk', MK19, V, KL27, transb='N', transa='T')
-            o.reduce_0j(KL27)
-            o.dot_wrapper('kmk', V, V, LL28, transb='N', transa='T')
-            o.reduce_0j(LL28)
-            o.dot_wrapper('kkk', KL22, LL28, KL29, transb='N', transa='N')
-            o.divide(KL27, KL29, KL30)
-            o.sqrt(KL30, KL31, transa='N')
-            o.multiply(S, KL31, S)
-        
-        return h
-    
-
-    @factorization
-    def run_nmtf_ding(self, X=None, U=None, S=None, V=None, E=None, n=None, 
-        m=None, k=None, l=None, debug=None, print_err=False):
-        o = self.operation
-        h = []
-        
-        MK4 = o.zeros(m, k)
-        NK5 = o.zeros(n, k)
-        KK6 = o.zeros(k, k)
-        NK7 = o.zeros(n, k)
-        NK8 = o.zeros(n, k)
-        NK9 = o.zeros(n, k)
-        MK11 = o.zeros(m, k)
-        ML12 = o.zeros(m, l)
-        LL13 = o.zeros(l, l)
-        ML14 = o.zeros(m, l)
-        ML15 = o.zeros(m, l)
-        ML16 = o.zeros(m, l)
-        KL18 = o.zeros(k, l)
+        NL10 = o.zeros(n, l)
+        NK11 = o.zeros(n, k)
+        KK12 = o.zeros(k, k)
+        AA13 = o.zeros(1, 1)
+        AA14 = o.zeros(1, 1)
+        LL15 = o.zeros(l, l)
+        KL16 = o.zeros(k, l)
+        KK17 = o.zeros(k, k)
+        NK18 = o.zeros(n, k)
         KK19 = o.zeros(k, k)
-        LL20 = o.zeros(l, l)
-        KL21 = o.zeros(k, l)
-        KL22 = o.zeros(k, l)
-        KL23 = o.zeros(k, l)
-        KL24 = o.zeros(k, l)
-        notify = o.number(0)
-        AA11 = o.zeros(1,1)
-        AA12 = o.number(n*k)
-        
-        for it in range(self.max_iter):
-            o.it = it
-            if self.rank == 0 and self.check_stop(E=E):
-                notify = o.number(1)
-                o.sync_(notify, 'i')
-                o.sync_(notify, 'j')
-                self.number_of_iterations = it
-                
-            if notify.fetch()[0,0] == 1:
-                print "Stopping criteria reached after %d iterations" % it
-                break
-            
-            if it == 2 and self.sync == False:
-                o.sync_matrix = o.empty_sync_matrix
-                o.mreduce = o.empty_mreduce
-            
-            if it == 2:
-                self.timer.split('main')
-            
-            o.sync_0j(S)
-            o.dot_wrapper('mkk', V, S, MK4, transb='T', transa='N')
-            o.sync_(MK4, 'j')
-            o.dot_wrapper('nmk', X, MK4, NK5, transb='N', transa='N')
-            o.reduce_(NK5, 'i')
-            o.dot_wrapper('knk', U, NK5, KK6, transb='N', transa='T')
-            o.reduce_0i(KK6)
-            o.sync_0i(KK6)
-            o.dot_wrapper('nkk', U, KK6, NK7, transb='N', transa='N')
-            o.kernel_wrapper('nk', NK5, NK7, U)
-            o.norm1(U, AA11, transa='N')
-            o.reduce_(AA11, 'i')
-            o.divide(AA11, AA12, E)
-            o.sync_(U, 'i')
-            o.dot_wrapper('mnk', X, U, MK11, transb='N', transa='T')
-            o.reduce_(MK11, 'j')
-            o.dot_wrapper('mkk', MK11, S, ML12, transb='N', transa='N')
-            o.dot_wrapper('kmk', V, ML12, LL13, transb='N', transa='T')
-            o.reduce_0j(LL13)
-            o.sync_0j(LL13)
-            o.dot_wrapper('mkk', V, LL13, ML14, transb='N', transa='N')
-            o.kernel_wrapper('mk', ML12, ML14, V)
-            o.dot_wrapper('kmk', MK11, V, KL18, transb='N', transa='T')
-            o.reduce_0j(KL18)
-            o.dot_wrapper('knk', U, U, KK19, transb='N', transa='T')
-            o.reduce_0i(KK19)
-            o.dot_wrapper('kmk', V, V, LL20, transb='N', transa='T')
-            o.reduce_0j(LL20)
-            o.dot_wrapper('kkk', KK19, S, KL21, transb='N', transa='N')
-            o.dot_wrapper('kkk', KL21, LL20, KL22, transb='N', transa='N')
-            o.kernel_wrapper('kk', KL18, KL22, S)
-        
-        return h
-        
-    @factorization
-    def run_nmtf_ding_err(self, X=None, U=None, S=None, V=None, E=None, n=None, 
-        m=None, k=None, l=None, debug=None, print_err=False):
-        o = self.operation
-        h = []
-    
-        KM5 = o.zeros(k, m)
-        NM6 = o.zeros(n, m)
-        NM7 = o.zeros(n, m)
-        NM8 = o.zeros(n, m)
-        AA9 = o.zeros(1, 1)
-        NM10 = o.zeros(n, m)
-        AA11 = o.zeros(1, 1)
-        NK13 = o.zeros(n, k)
-        KK14 = o.zeros(k, k)
-        NK15 = o.zeros(n, k)
-        NK16 = o.zeros(n, k)
-        NK17 = o.zeros(n, k)
-        MK19 = o.zeros(m, k)
-        ML20 = o.zeros(m, l)
-        LL21 = o.zeros(l, l)
-        ML22 = o.zeros(m, l)
-        ML23 = o.zeros(m, l)
-        ML24 = o.zeros(m, l)
-        KL26 = o.zeros(k, l)
+        AA20 = o.zeros(1, 1)
+        AA21 = o.zeros(1, 1)
+        AA22 = o.zeros(1, 1)
+        MK25 = o.zeros(m, k)
+        ML26 = o.zeros(m, l)
         KK27 = o.zeros(k, k)
-        LL28 = o.zeros(l, l)
-        KL29 = o.zeros(k, l)
-        KL30 = o.zeros(k, l)
-        KL31 = o.zeros(k, l)
+        KL28 = o.zeros(k, l)
+        LL29 = o.zeros(l, l)
+        ML30 = o.zeros(m, l)
         KL32 = o.zeros(k, l)
+        LL33 = o.zeros(l, l)
+        KL34 = o.zeros(k, l)
+        KN35 = o.zeros(k, n)
         notify = o.number(0)
+        
+        o.multiply(X, X, NM8)
+        o.norm1(NM8, AA5)
+        o.reduce_(AA5, 'ij')
         
         for it in range(self.max_iter):
             o.it = it
@@ -590,51 +324,160 @@ class Context(object):
                         print '%d:' % it, float(err)
                         h.append(err)
             
+            o.sync_(V, 'j')
+            o.dot_wrapper('nmk', X, V, NL10)
+            o.reduce_(NL10, 'i')
+            o.sync_0i(S)
+            o.dot_wrapper('nkk', NL10, S, NK11, transb='T')
+            o.dot_wrapper('knk', NK11, U, KK12, transa='T')
+            o.reduce_0i(KK12)
+            o.trace(KK12, AA13)
+            o.multiply(AA7, AA13, AA14)
+            o.dot_wrapper('kmk', V, V, LL15, transa='T')
+            o.reduce_0j(LL15)
+            o.dot_wrapper('kkk', S, LL15, KL16)
+            o.dot_wrapper('kkk', KL16, S, KK17, transb='T')
+            o.sync_0i(KK17)
+            o.dot_wrapper('nkk', U, KK17, NK18)
+            o.dot_wrapper('knk', U, NK18, KK19, transa='T')
+            o.reduce_0i(KK19)
+            o.trace(KK19, AA20)
+            o.sub(AA14, AA20, AA21)
+            o.divide(AA21, AA5, AA22)
+            o.sub(AA6, AA22, E)
+            o.kernel_wrapper_lin('nk', NK11, NK18, U)
+            o.sync_(U, 'i')
+            o.dot_wrapper('mnk', X, U, MK25, transa='T')
+            o.reduce_(MK25, 'j')
             o.sync_0j(S)
-            o.dot_wrapper('kkm', S, V, KM5, transb='T', transa='N')
-            o.sync_(U, 'i')
-            o.sync_(KM5, 'j')
-            o.dot_wrapper('nkm', U, KM5, NM6, transb='N', transa='N')
-            o.sub(X, NM6, NM7)
-            o.square(NM7, NM8, transa='N')
-            o.norm1(NM8, AA9, transa='N')
-            o.reduce_(AA9, 'ij')
-            o.square(X, NM10, transa='N')
-            o.norm1(NM10, AA11, transa='N')
-            o.reduce_(AA11, 'ij')
-            o.divide(AA9, AA11, E)
-            o.sync_(KM5, 'j')
-            o.dot_wrapper('nmk', X, KM5, NK13, transb='T', transa='N')
-            o.reduce_(NK13, 'i')
-            o.dot_wrapper('knk', U, NK13, KK14, transb='N', transa='T')
-            o.reduce_0i(KK14)
-            o.sync_0i(KK14)
-            o.dot_wrapper('nkk', U, KK14, NK15, transb='N', transa='N')
-            o.divide(NK13, NK15, NK16)
-            o.sqrt(NK16, NK17, transa='N')
-            o.multiply(U, NK17, U)
-            o.sync_(U, 'i')
-            o.dot_wrapper('mnk', X, U, MK19, transb='N', transa='T')
-            o.reduce_(MK19, 'j')
-            o.dot_wrapper('mkk', MK19, S, ML20, transb='N', transa='N')
-            o.dot_wrapper('kmk', V, ML20, LL21, transb='N', transa='T')
-            o.reduce_0j(LL21)
-            o.sync_0j(LL21)
-            o.dot_wrapper('mkk', V, LL21, ML22, transb='N', transa='N')
-            o.divide(ML20, ML22, ML23)
-            o.sqrt(ML23, ML24, transa='N')
-            o.multiply(V, ML24, V)
-            o.dot_wrapper('kmk', MK19, V, KL26, transb='N', transa='T')
-            o.reduce_0j(KL26)
-            o.dot_wrapper('knk', U, U, KK27, transb='N', transa='T')
+            o.dot_wrapper('mkk', MK25, S, ML26)
+            o.dot_wrapper('knk', U, U, KK27, transa='T')
             o.reduce_0i(KK27)
-            o.dot_wrapper('kmk', V, V, LL28, transb='N', transa='T')
-            o.reduce_0j(LL28)
-            o.dot_wrapper('kkk', KK27, S, KL29, transb='N', transa='N')
-            o.dot_wrapper('kkk', KL29, LL28, KL30, transb='N', transa='N')
-            o.divide(KL26, KL30, KL31)
-            o.sqrt(KL31, KL32, transa='N')
-            o.multiply(S, KL32, S)
+            o.dot_wrapper('kkk', KK27, S, KL28)
+            o.dot_wrapper('kkk', S, KL28, LL29, transa='T')
+            o.sync_0j(LL29)
+            o.dot_wrapper('mkk', V, LL29, ML30)
+            o.kernel_wrapper_lin('mk', ML26, ML30, V)
+            o.dot_wrapper('kmk', MK25, V, KL32, transa='T')
+            o.reduce_0j(KL32)
+            o.dot_wrapper('kmk', V, V, LL33, transa='T')
+            o.reduce_0j(LL33)
+            o.dot_wrapper('kkk', KL28, LL33, KL34)
+            o.kernel_wrapper_lin('kk', KL32, KL34, S)
+
+        return h
+
+    @factorization
+    def run_nmtf_ding(self, X=None, U=None, S=None, V=None, E=None, n=None, 
+        m=None, k=None, l=None, debug=None, print_err=False):
+        o = self.operation
+        h = []
+    
+        AA5 = o.zeros(1, 1)
+        AA6 = o.number(1)
+        AA7 = o.number(2)
+        NM8 = o.zeros(n, m)
+        NL10 = o.zeros(n, l)
+        NK11 = o.zeros(n, k)
+        KK12 = o.zeros(k, k)
+        AA13 = o.zeros(1, 1)
+        AA14 = o.zeros(1, 1)
+        KK15 = o.zeros(k, k)
+        LL16 = o.zeros(l, l)
+        KL17 = o.zeros(k, l)
+        KL18 = o.zeros(k, l)
+        KK19 = o.zeros(k, k)
+        AA20 = o.zeros(1, 1)
+        AA21 = o.zeros(1, 1)
+        AA22 = o.zeros(1, 1)
+        NK24 = o.zeros(n, k)
+        MK26 = o.zeros(m, k)
+        ML27 = o.zeros(m, l)
+        LL28 = o.zeros(l, l)
+        ML29 = o.zeros(m, l)
+        KL31 = o.zeros(k, l)
+        KK32 = o.zeros(k, k)
+        LL33 = o.zeros(l, l)
+        KL34 = o.zeros(k, l)
+        KL35 = o.zeros(k, l)
+        notify = o.number(0)
         
+        o.multiply(X, X, NM8)
+        o.norm1(NM8, AA5)
+        o.reduce_(AA5, 'ij')
+        
+        for it in range(self.max_iter):
+            o.it = it
+            if self.rank == 0 and self.check_stop(E=E):
+                notify = o.number(1)
+                o.sync_(notify, 'i')
+                o.sync_(notify, 'j')
+                self.number_of_iterations = it
+                
+            if notify.fetch()[0,0] == 1:
+                print "Stopping criteria reached after %d iterations" % it
+                break
+            
+            if it == 2 and self.sync == False:
+                self.operation.sync_matrix = self.operation.empty_sync_matrix
+                self.operation.mreduce = self.operation.empty_mreduce
+            
+            if it == 2:
+                self.timer.split('main')
+            
+            if print_err:
+                e = E.fetch()
+                err = e[0,0]
+                
+                if self.rank == 0:
+                    if it == 0:
+                        print "Frobenius norm at iteration:"
+                    else:
+                        print '%d:' % it, float(err)
+                        h.append(err)
+            
+            o.sync_(V, 'j')
+            o.dot_wrapper('nmk', X, V, NL10)
+            o.reduce_(NL10, 'i')
+            o.sync_0i(S)
+            o.dot_wrapper('nkk', NL10, S, NK11, transb='T')
+            o.dot_wrapper('knk', NK11, U, KK12, transa='T')
+            o.reduce_0i(KK12)
+            o.trace(KK12, AA13)
+            o.multiply(AA7, AA13, AA14)
+            o.dot_wrapper('knk', U, U, KK15, transa='T')
+            o.reduce_0i(KK15)
+            o.dot_wrapper('kmk', V, V, LL16, transa='T')
+            o.reduce_0j(LL16)
+            o.dot_wrapper('kkk', KK15, S, KL17)
+            o.dot_wrapper('kkk', KL17, LL16, KL18)
+            o.dot_wrapper('kkk', KL18, S, KK19, transb='T')
+            o.trace(KK19, AA20)
+            o.sub(AA14, AA20, AA21)
+            o.divide(AA21, AA5, AA22)
+            o.sub(AA6, AA22, E)
+            o.sync_0i(KK12)
+            o.dot_wrapper('nkk', U, KK12, NK24, transb='T')
+            o.kernel_wrapper('nk', NK11, NK24, U)
+            o.sync_(U, 'i')
+            o.dot_wrapper('mnk', X, U, MK26, transa='T')
+            o.reduce_(MK26, 'j')
+            o.sync_0j(S)
+            o.dot_wrapper('mkk', MK26, S, ML27)
+            o.dot_wrapper('kmk', V, ML27, LL28, transa='T')
+            o.reduce_0j(LL28)
+            o.sync_0j(LL28)
+            o.dot_wrapper('mkk', V, LL28, ML29)
+            o.kernel_wrapper('mk', ML27, ML29, V)
+            o.dot_wrapper('kmk', MK26, V, KL31, transa='T')
+            o.reduce_0j(KL31)
+            o.dot_wrapper('knk', U, U, KK32, transa='T')
+            o.reduce_0i(KK32)
+            o.dot_wrapper('kmk', V, V, LL33, transa='T')
+            o.reduce_0j(LL33)
+            o.dot_wrapper('kkk', KK32, S, KL34)
+            o.dot_wrapper('kkk', KL34, LL33, KL35)
+            o.kernel_wrapper('kk', KL31, KL35, S)
+                        
         return h
         

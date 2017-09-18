@@ -86,24 +86,4 @@ def measure_error(params):
     E = storage['E']
     err = E.sum()
     if err != 0.0:
-        print 'Builtin error function:', err
-    
-    filename = to_path(cache_folder, '%d_%d' % (1, 1), '%d_%d.npz' % (0, 0))
-    if not os.path.isfile(filename):
-        print 'Warning: Dataset file not found: %s' % filename
-    
-    X = load_numpy(filename)
-
-    if any([x is None for x in U, S, V, X]):
-        print 'Error calculating error: matrix is none'
-    
-    X1 = np.dot(np.dot(U, S), V.T)
-    Q = (X - X1)
-    E = np.sum(np.multiply(Q, Q))
-    if type(X) == csr_matrix:
-        F = np.sum(X.multiply(X))
-    else:
-        F = np.sum(np.multiply(X, X))
-    
-    error = E / F
-    print 'Frobenius norm:', error
+        print 'Error function:', err

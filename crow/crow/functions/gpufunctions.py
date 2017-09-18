@@ -2,6 +2,8 @@ import numpy as np
 import skcuda.linalg as linalg
 import skcuda.misc
 import pycuda.cumath
+import pycuda.gpuarray
+from cuda_cffi import cusparse
 
 from crow.transfer.gputransfer import *
 ### Selective functions ###
@@ -24,11 +26,19 @@ def load_kernel():
     Y = gpuones(10,10)
     Z = gpuzeros(10,10)
     kernel(X, Y, Z)
+    kernel_lin(X, Y, Z)
 
 ### Dynamic functions ###
 
 def multiply(A, B, C):
-    return skcuda.misc.multiply(A, B)
+    if type(A) == pycuda.gpuarray.GPUArray:
+        return skcuda.misc.multiply(A, B)
+    else:
+        A_cpu = A.get()
+        B_cpu = B.get()
+        C = A_cpu.multiply(B_cpu)
+        C = cusparse.CSR.to_CSR(C)
+        return C
 
 def divide_safe(A, B, C):
     if B.shape[0] == 1:
@@ -52,6 +62,12 @@ def kernel(A, B, C, transa='N'):
     else:
         kern(A, B, C)
 
+def kernel_lin(A, B, C, transa='N'):
+    if transa == 'T':
+        kern_lin(linalg.transpose(A), B, C)
+    else:
+        kern_lin(A, B, C)
+
 def transpose(A):
     return linalg.transpose(A)
 
@@ -72,6 +88,13 @@ def sqrt(A, C):
     pycuda.cumath.sqrt(A, out=C)
     return C
 
+def trace(A, C):
+    trace = skcuda.linalg.trace(A)
+    C = C.get()
+    C[0,0] = trace
+    C = togpu(C)
+    return C
+
 FUNCTIONS = {
     '_multiply': multiply,
     '_divide': divide_safe,
@@ -81,5 +104,7 @@ FUNCTIONS = {
     '_sub': sub,
     '_sum': sum_all,
     'kernel': kernel,
+    'kernel_lin': kernel_lin,
     '_sqrt': sqrt,
+    '_trace': trace,
 }

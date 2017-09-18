@@ -4,6 +4,7 @@ import sys
 import os
 import cPickle
 import csv
+import shutil
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -100,16 +101,28 @@ def csv_todense(filename, pklname):
 def dense_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)]):
     pkl_sparse = to_path(data_folder, '1_1', '0_0.npz')
     if not os.path.isfile(pkl_sparse):
-        csv_todense(data_file, pkl_sparse)
+        input_type = os.path.splitext(data_file)[1].replace('.', '')
+        if input_type == 'coo':
+            csv_todense(data_file, pkl_sparse)
+        elif input_type == 'npz':
+            ensure_dir(pkl_sparse)
+            os.symlink(data_file, pkl_sparse)
     
+    blocks = [b for b in blocks if b != (1,1)]
     slice_datasets(pkl_sparse, data_folder, blocks=blocks)
     return data_folder
 
 def sparse_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)], balanced=True):
     pkl_sparse = to_path(data_folder, '1_1', 's0_0.npz')
     if not os.path.isfile(pkl_sparse):
-        csv_tosparse_fast(data_file, pkl_sparse)
+        input_type = os.path.splitext(data_file)[1].replace('.', '')
+        if input_type == 'coo':
+            csv_tosparse_fast(data_file, pkl_sparse)
+        elif input_type == 'npz':
+            ensure_dir(pkl_sparse)
+            os.symlink(data_file, pkl_sparse)
     
+    blocks = [b for b in blocks if b != (1,1)]
     if balanced == True:
         balanced_slicing(pkl_sparse, data_folder, blocks=blocks)
     else:

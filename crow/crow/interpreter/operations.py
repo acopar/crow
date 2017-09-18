@@ -106,6 +106,17 @@ class Operation(object):
             if self.bid == (0,0):
                 self.kernel(A.get(), B.get(), C.get(), transa='N')
     
+    def kernel_wrapper_lin(self, dim, A, B, C, transa='N', transb='N'):
+        if dim == 'nk':
+            if self.bid[1] == 0:
+                self.kernel_lin(A.get(), B.get(), C.get(), transa='N')
+        elif dim == 'mk':
+            if self.bid[0] == 0:
+                self.kernel_lin(A.get(), B.get(), C.get(), transa='N')
+        elif dim == 'kk':
+            if self.bid == (0,0):
+                self.kernel_lin(A.get(), B.get(), C.get(), transa='N')
+    
     def transpose(self, A, C, transa='N', pos=None):
         C.set(self._tr(A.get()))
     
@@ -135,6 +146,9 @@ class Operation(object):
         
     def norm2(self, A, C, transa='N', pos=None):
         raise Exception("Unimplemented norm2")
+    
+    def trace(self, A, C, transa='N', pos=None):
+        C.set(self._trace(A.get(), C.get()))
     
     def project(self, A, C, transa='N', pos=None):
         C.set(self._project(A.get(), C.get(), transa=transa))

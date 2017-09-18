@@ -36,8 +36,12 @@ def divide(A, B, C):
     np.divide(A, (B + EPSILON), out=C)
     return C
 
-def kernel_lin(A, B, C):
-    C *= A / (B + EPSILON)
+def kernel_lin(A, B, C, transa='N'):
+    if transa == 'T':
+        C *= (A.T / (B + EPSILON))
+    else:
+        C *= (A / (B + EPSILON))
+    C[C<EPSILON] = EPSILON
     return C
 
 def axis_sum(X, C, transa='N'):
@@ -62,11 +66,18 @@ def sum_all(A, C):
     return C
 
 def multiply(A, B, C):
-    D = np.multiply(A, B)
+    if type(A) == np.ndarray:
+        D = np.multiply(A, B)
+    else:
+        D = A.multiply(B)
     return D
 
 def sqrt(A, C):
     C = np.sqrt(A, C)
+    return C
+
+def trace(A, C):
+    C = np.trace(A)
     return C
 
 FUNCTIONS = {
@@ -78,5 +89,7 @@ FUNCTIONS = {
     '_sub': sub,
     '_sum': sum_all,
     'kernel': kernel,
-    '_sqrt': sqrt
+    'kernel_lin': kernel_lin,
+    '_sqrt': sqrt,
+    '_trace': trace
 }
