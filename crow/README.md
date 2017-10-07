@@ -75,13 +75,14 @@ To download preprocessed benchmark datasets, use the provided ``get_datasets.sh`
     scripts/get_datasets.sh
 ```
 
-This script downloads five datasets that have already been converted into coordinate list format:
+This script downloads datasets that have already been preprocessed and converted into coordinate list or npz format:
 - [ArrayExpress](http://file.biolab.si/crow/ArrayExpress.coo): 22283x5896, file size: 3.5GB
 - [TCGA-BRCA](http://file.biolab.si/crow/TCGA-BRCA.coo): 1222x60483, file size: 1.5GB
 - [Fetus](http://file.biolab.si/crow/fetus.coo): 25569x25608, file size: 622M
 - [Retina](http://file.biolab.si/crow/retina.coo): 25823x25822, file size: 2.9GB
 - [Cochlea](http://file.biolab.si/crow/cochlea.coo): 25824x25824, file size: 5.6GB
-
+- [TCGA-Methyl](http://file.biolab.si/crow/TCGA-Methyl.npz): 10181x485577, file size: 19GB
+- [TCGA-Methyl (cancer gene subset)](http://file.biolab.si/crow/TCGA-Methyl-cancer.npz): 10181x14299, file size: 556MB
 
 #### Data format
 
