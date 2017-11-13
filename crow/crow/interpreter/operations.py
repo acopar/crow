@@ -54,6 +54,43 @@ def block_operation(f):
             f(*args, **kwargs)
     return new_f
 
+def wrap_level3(func):
+    def new_f(self, dim, A, B, C, transa='N', transb='N'):
+        for bid in self.blocks:
+            self.bid = bid
+            A.key = bid
+            B.key = bid
+            C.key = bid
+            func(self, dim, A, B, C, transa=transa, transb=transb)
+    return new_f
+
+
+def wrap_level2(func):
+    def new_f(self, A, B, C, transa='N', transb='N'):
+        for bid in self.blocks:
+            self.bid = bid
+            A.key = bid
+            B.key = bid
+            C.key = bid
+            func(self, A, B, C, transa=transa)
+    return new_f
+
+def wrap_level1(func):
+    def new_f(self, A, C, transa='N', transb='N'):
+        for bid in self.blocks:
+            self.bid = bid
+            A.key = bid
+            C.key = bid
+            func(self, A, C, transa=transa)
+    return new_f
+
+def wrap_sync(func):
+    def new_f(self, A, b):
+        for bid in self.blocks:
+            self.bid = bid
+            func(self, A, b)
+    return new_f
+
 class Operation(object):
     def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, sync=True):
         self.__dict__.update(locals())
@@ -86,6 +123,7 @@ class Operation(object):
         self.it = 0
         self.sync_flag = sync
     
+    @wrap_level3
     def dot_wrapper(self, dim, A, B, C, transa='N', transb='N', pos=None):
         func = None
         if dim in self.dot_mapper:
@@ -95,6 +133,7 @@ class Operation(object):
         
         func(A, B, C, transa=transa, transb=transb)
     
+    @wrap_level3
     def kernel_wrapper(self, dim, A, B, C, transa='N', transb='N'):
         if dim == 'nk':
             if self.bid[1] == 0:
@@ -106,6 +145,7 @@ class Operation(object):
             if self.bid == (0,0):
                 self.kernel(A.get(), B.get(), C.get(), transa='N')
     
+    @wrap_level3
     def kernel_wrapper_lin(self, dim, A, B, C, transa='N', transb='N'):
         if dim == 'nk':
             if self.bid[1] == 0:
@@ -117,42 +157,55 @@ class Operation(object):
             if self.bid == (0,0):
                 self.kernel_lin(A.get(), B.get(), C.get(), transa='N')
     
+    @wrap_level1
     def transpose(self, A, C, transa='N', pos=None):
         C.set(self._tr(A.get()))
     
-    def divide(self, A, B, C, pos=None):
+    @wrap_level2
+    def divide(self, A, B, C, transa='N', pos=None):
         C.set(self._divide(A.get(), B.get(), C.get()))
     
-    def sub(self, A, B, C, pos=None):
+    @wrap_level2
+    def sub(self, A, B, C, transa='N', pos=None):
         C.set(self._sub(A.get(), B.get(), C.get()))
     
-    def add(self, A, B, C, pos=None):
+    @wrap_level2
+    def add(self, A, B, C, transa='N', pos=None):
         C.set(self._add(A.get(), B.get(), C.get()))
 
-    def multiply(self, A, B, C, pos=None):
+    @wrap_level2
+    def multiply(self, A, B, C, transa='N', pos=None):
         C.set(self._multiply(A.get(), B.get(), C.get()))
     
+    @wrap_level1
     def square(self, A, C, transa='N', pos=None):
         self.multiply(A, A, C)
     
+    @wrap_level1
     def sqrt(self, A, C, transa='N', pos=None):
         self._sqrt(A.get(), C.get())
     
+    @wrap_level1
     def inverse(self, A, C, transa='N', pos=None):
         C.set(self._inverse(A.get(), C.get()))
     
+    @wrap_level1
     def norm1(self, A, C, transa='N', pos=None):
         self.sum(A, C)
-        
+       
+    @wrap_level1 
     def norm2(self, A, C, transa='N', pos=None):
         raise Exception("Unimplemented norm2")
     
+    @wrap_level1
     def trace(self, A, C, transa='N', pos=None):
         C.set(self._trace(A.get(), C.get()))
     
+    @wrap_level1
     def project(self, A, C, transa='N', pos=None):
         C.set(self._project(A.get(), C.get(), transa=transa))
     
+    @wrap_level1
     def log(self, A, C, transa='N', pos=None):
         C.set(self._log(A.get(), C.get(), transa=transa))
     
@@ -167,7 +220,8 @@ class Operation(object):
             if self.bid == (0,0):
                 C.set(self._axis_sum(A.get(), C.get(), transa=transa))
     
-    def sum(self, A, C):
+    @wrap_level1
+    def sum(self, A, C, transa='N'):
         C.set(self._sum(A.get(), C.get()))
     
     def bigdot_wrapper(self, A, B, C, transa='N', transb='N', pos=None):
@@ -202,7 +256,8 @@ class Operation(object):
         A = A.get(key=bid1)
         B = B.get(key=bid2)
         C.set(self.dot(A, B, C.get(), transa=transa, transb=transb))
-
+    
+    @wrap_sync
     def sync_(self, A, axis):
         if self.sync_flag == False and self.it >= 2:
             return
@@ -237,6 +292,7 @@ class Operation(object):
             if dev[bid] != dev[source]:
                 self.recv(A[bid], dev[source])
     
+    @wrap_sync
     def reduce_(self, A, axis, debug=False):
         if self.sync_flag == False and self.it >= 2:
             return
@@ -276,7 +332,25 @@ class Operation(object):
             if dev[bid] != dev[source]:
                 self.sync_only()
                 self.send(A[bid], dev[source])
-    
+
+    def rank_reduce(self, A):
+        bid = self.bid
+        dev = self.rev_map[bid]
+        
+        device_list = sorted(self.rev_map.values())
+        device_list = [x for x in device_list if x != 0]
+        
+        if dev == 0:
+            output = A[bid]
+            kmp = self.zeros_function(*output.shape)
+            for d in device_list:
+                self.recv(kmp, d)
+                output += kmp
+        else:
+            self.sync_only()
+            self.send(A[bid], 0)
+            
+
     @vertical_operation
     def sync_0i(self, C):
         self.sync_(C, 'j')
@@ -313,14 +387,48 @@ class Operation(object):
         return mat
     
     def zeros(self, x, y=0):
-        return Matrix(self.zeros_function(x, y), key=self.bid)
+        m = None
+        xb = x
+        yb = y
+        for bid in self.blocks:
+            if type(x) == type({}):
+                xb = x[bid]
+                yb = y[bid]
+            
+            if m is None:
+                m = Matrix(self.zeros_function(xb, yb), key=bid)
+            else:
+                m.append(self.zeros_function(xb, yb), key=bid)
+        return m
 
     def ones(self, x, y=0):
-        return Matrix(self.ones_function(x, y), key=self.bid)
+        m = None
+        xb = x
+        yb = y
+        for bid in self.blocks:
+            if type(x) == type({}):
+                xb = x[bid]
+                yb = y[bid]
+            
+            if m is None:
+                m = Matrix(self.ones_function(xb, yb), key=bid)
+            else:
+                m.append(self.ones_function(xb, yb), key=bid)
+        return m
     
     def number(self, x):
-        return Matrix(self.number_function(x), key=self.bid)
-
+        m = None
+        xb = x
+        for bid in self.blocks:
+            if type(x) == type({}):
+                xb = x[bid]
+            
+            if m is None:
+                m = Matrix(self.number_function(xb), key=bid)
+            else:
+                m.append(self.number_function(xb), key=bid)
+        return m
+    
     def block_zeros(self, dim_x, dim_y, block_map, model='ij'):
         mat = None
         for bid in block_map:

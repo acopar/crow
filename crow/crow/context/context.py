@@ -27,10 +27,13 @@ def factorization(f):
         bid = blocks_i[0]
         
         self.operation.bid = bid
-        kwargs['n'] = self.dimensions['n'][bid]
-        kwargs['m'] = self.dimensions['m'][bid]
-        kwargs['k'] = self.dimensions['k'][bid]
-        kwargs['l'] = self.dimensions['l'][bid]
+        self.operation.dimensions = self.dimensions
+        self.operation.blocks = self.block_map[0]
+        
+        kwargs['n'] = self.dimensions['n']
+        kwargs['m'] = self.dimensions['m']
+        kwargs['k'] = self.dimensions['k']
+        kwargs['l'] = self.dimensions['l']
 
         self.timer = Timer()
         self.operation.load_kernel()
@@ -263,11 +266,10 @@ class Context(object):
         m=None, k=None, l=None, debug=None, print_err=False):
         o = self.operation
         h = []
-    
+        
         AA5 = o.zeros(1, 1)
         AA6 = o.number(1)
         AA7 = o.number(2)
-        #NM8 = o.zeros(n, m)
         NL10 = o.zeros(n, l)
         NK11 = o.zeros(n, k)
         KK12 = o.zeros(k, k)
@@ -294,14 +296,15 @@ class Context(object):
         notify = o.number(0)
         
         MC = o.number(o.get_mem_info() - self.initial_memory)
-        o.reduce_(MC, 'ij')
+        o.rank_reduce(MC)
         if self.rank == 0:
             print "Memory consumption %d MB" % MC.fetch()
         
         if print_err:
-            x = X.fetch()
-            NM8 = np.multiply(x, x)
-            AA5 = o.number(NM8.sum())
+            for bid in o.blocks:
+                x = X.fetch(key=bid)
+                NM8 = np.multiply(x, x)
+                AA5.set(o.number_function(NM8.sum()), key=bid)
             o.reduce_(AA5, 'ij')
         
         for it in range(self.max_iter):
@@ -324,10 +327,9 @@ class Context(object):
                 self.timer.split('main')
             
             if print_err:
-                e = E.fetch()
-                err = e[0,0]
-                
                 if self.rank == 0:
+                    e = E.fetch(key=(0,0))
+                    err = e[0,0]
                     if it == 0:
                         print "Frobenius norm at iteration:"
                     else:
@@ -387,7 +389,6 @@ class Context(object):
         AA5 = o.zeros(1, 1)
         AA6 = o.number(1)
         AA7 = o.number(2)
-        #NM8 = o.zeros(n, m)
         NL10 = o.zeros(n, l)
         NK11 = o.zeros(n, k)
         KK12 = o.zeros(k, k)
@@ -414,14 +415,15 @@ class Context(object):
         notify = o.number(0)
         
         MC = o.number(o.get_mem_info() - self.initial_memory)
-        o.reduce_(MC, 'ij')
+        o.rank_reduce(MC)
         if self.rank == 0:
             print "Memory consumption %d MB" % MC.fetch()
         
         if print_err:
-            x = X.fetch()
-            NM8 = np.multiply(x, x)
-            AA5 = o.number(NM8.sum())
+            for bid in o.blocks:
+                x = X.fetch(key=bid)
+                NM8 = np.multiply(x, x)
+                AA5.set(o.number_function(NM8.sum()), key=bid)
             o.reduce_(AA5, 'ij')
         
         for it in range(self.max_iter):
@@ -444,10 +446,9 @@ class Context(object):
                 self.timer.split('main')
             
             if print_err:
-                e = E.fetch()
-                err = e[0,0]
-                
                 if self.rank == 0:
+                    e = E.fetch(key=(0,0))
+                    err = e[0,0]
                     if it == 0:
                         print "Frobenius norm at iteration:"
                     else:
