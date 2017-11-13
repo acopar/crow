@@ -186,4 +186,7 @@ def partition_factors(factor_folder, factor_cache, config, dimensions, matrices)
             fblock_file = to_path(factor_cache,  '%d_%d.pkl' % (i, j))
             dump_file(fblock_file, block_factors)
 
-    
+def prepare_results(results_folder, matrices):
+    for d in matrices:
+        key = d['name']
+        ensure_dir(to_path(results_folder, key))

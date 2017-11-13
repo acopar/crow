@@ -36,6 +36,8 @@ def factorization(f):
         self.operation.load_kernel()
         self.operation.sync_flag = self.sync
         
+        kwargs['print_err'] = self.flags['error']
+
         h = f(*args, **kwargs)
 
         self.operation.empty_sync_matrix(None, None, None)
@@ -54,6 +56,7 @@ class Context(object):
         self.size = size
         self.sync = flags['sync']
         self.stop = flags['stop']
+        self.flags = flags
         self.prev = None
         self.now = None
         
@@ -264,7 +267,7 @@ class Context(object):
         AA5 = o.zeros(1, 1)
         AA6 = o.number(1)
         AA7 = o.number(2)
-        NM8 = o.zeros(n, m)
+        #NM8 = o.zeros(n, m)
         NL10 = o.zeros(n, l)
         NK11 = o.zeros(n, k)
         KK12 = o.zeros(k, k)
@@ -290,9 +293,16 @@ class Context(object):
         KN35 = o.zeros(k, n)
         notify = o.number(0)
         
-        o.multiply(X, X, NM8)
-        o.norm1(NM8, AA5)
-        o.reduce_(AA5, 'ij')
+        MC = o.number(o.get_mem_info() - self.initial_memory)
+        o.reduce_(MC, 'ij')
+        if self.rank == 0:
+            print "Memory consumption %d MB" % MC.fetch()
+        
+        if print_err:
+            x = X.fetch()
+            NM8 = np.multiply(x, x)
+            AA5 = o.number(NM8.sum())
+            o.reduce_(AA5, 'ij')
         
         for it in range(self.max_iter):
             o.it = it
@@ -331,8 +341,6 @@ class Context(object):
             o.dot_wrapper('nkk', NL10, S, NK11, transb='T')
             o.dot_wrapper('knk', NK11, U, KK12, transa='T')
             o.reduce_0i(KK12)
-            o.trace(KK12, AA13)
-            o.multiply(AA7, AA13, AA14)
             o.dot_wrapper('kmk', V, V, LL15, transa='T')
             o.reduce_0j(LL15)
             o.dot_wrapper('kkk', S, LL15, KL16)
@@ -340,11 +348,14 @@ class Context(object):
             o.sync_0i(KK17)
             o.dot_wrapper('nkk', U, KK17, NK18)
             o.dot_wrapper('knk', U, NK18, KK19, transa='T')
-            o.reduce_0i(KK19)
-            o.trace(KK19, AA20)
-            o.sub(AA14, AA20, AA21)
-            o.divide(AA21, AA5, AA22)
-            o.sub(AA6, AA22, E)
+            if print_err:
+                o.reduce_0i(KK19)
+                o.trace(KK12, AA13)
+                o.multiply(AA7, AA13, AA14)    
+                o.trace(KK19, AA20)
+                o.sub(AA14, AA20, AA21)
+                o.divide(AA21, AA5, AA22)
+                o.sub(AA6, AA22, E)
             o.kernel_wrapper_lin('nk', NK11, NK18, U)
             o.sync_(U, 'i')
             o.dot_wrapper('mnk', X, U, MK25, transa='T')
@@ -376,7 +387,7 @@ class Context(object):
         AA5 = o.zeros(1, 1)
         AA6 = o.number(1)
         AA7 = o.number(2)
-        NM8 = o.zeros(n, m)
+        #NM8 = o.zeros(n, m)
         NL10 = o.zeros(n, l)
         NK11 = o.zeros(n, k)
         KK12 = o.zeros(k, k)
@@ -402,9 +413,16 @@ class Context(object):
         KL35 = o.zeros(k, l)
         notify = o.number(0)
         
-        o.multiply(X, X, NM8)
-        o.norm1(NM8, AA5)
-        o.reduce_(AA5, 'ij')
+        MC = o.number(o.get_mem_info() - self.initial_memory)
+        o.reduce_(MC, 'ij')
+        if self.rank == 0:
+            print "Memory consumption %d MB" % MC.fetch()
+        
+        if print_err:
+            x = X.fetch()
+            NM8 = np.multiply(x, x)
+            AA5 = o.number(NM8.sum())
+            o.reduce_(AA5, 'ij')
         
         for it in range(self.max_iter):
             o.it = it
@@ -443,19 +461,20 @@ class Context(object):
             o.dot_wrapper('nkk', NL10, S, NK11, transb='T')
             o.dot_wrapper('knk', NK11, U, KK12, transa='T')
             o.reduce_0i(KK12)
-            o.trace(KK12, AA13)
-            o.multiply(AA7, AA13, AA14)
-            o.dot_wrapper('knk', U, U, KK15, transa='T')
-            o.reduce_0i(KK15)
-            o.dot_wrapper('kmk', V, V, LL16, transa='T')
-            o.reduce_0j(LL16)
-            o.dot_wrapper('kkk', KK15, S, KL17)
-            o.dot_wrapper('kkk', KL17, LL16, KL18)
-            o.dot_wrapper('kkk', KL18, S, KK19, transb='T')
-            o.trace(KK19, AA20)
-            o.sub(AA14, AA20, AA21)
-            o.divide(AA21, AA5, AA22)
-            o.sub(AA6, AA22, E)
+            if print_err:
+                o.dot_wrapper('knk', U, U, KK15, transa='T')
+                o.reduce_0i(KK15)
+                o.dot_wrapper('kmk', V, V, LL16, transa='T')
+                o.reduce_0j(LL16)
+                o.dot_wrapper('kkk', KK15, S, KL17)
+                o.dot_wrapper('kkk', KL17, LL16, KL18)
+                o.dot_wrapper('kkk', KL18, S, KK19, transb='T')
+                o.trace(KK12, AA13)
+                o.multiply(AA7, AA13, AA14)
+                o.trace(KK19, AA20)
+                o.sub(AA14, AA20, AA21)
+                o.divide(AA21, AA5, AA22)
+                o.sub(AA6, AA22, E)
             o.sync_0i(KK12)
             o.dot_wrapper('nkk', U, KK12, NK24, transb='T')
             o.kernel_wrapper('nk', NK11, NK24, U)

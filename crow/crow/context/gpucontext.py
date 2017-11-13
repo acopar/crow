@@ -36,6 +36,12 @@ class GPUOperation(Operation):
         for name, func in FUNCTIONS.items():
             self.__dict__[name] = func
 
+    def get_mem_info(self):
+        (free,total) = driver.mem_get_info()
+        x = float(free)
+        y = float(total)
+        
+        return (y-x)/1024/1024
     
 class GPUContext(Context):
     def __init__(self, inputs, dimensions, config, flags):
@@ -96,7 +102,8 @@ class GPUContext(Context):
         
         cusparse.init()
         linalg.init()
-        
+
+        self.initial_memory = self.operation.get_mem_info()
         #from crow.transfer.kernels import *
         #self.operation.mod = mod
         

@@ -16,8 +16,7 @@ cache=$(cat docker-compose.yml | grep '/home/crow/cache' | sed 's/.*-[[:space:]]
 DST="$DIRNAME/$cache"
 
 if [[ ! -d "$DST" ]]; then
-    echo "Unable to find directory $DST"
-    exit 1
+    mkdir "$DST"
 fi
 
 echo "$USERID:$USERGID" > $DST/userid.txt

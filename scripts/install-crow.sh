@@ -25,4 +25,16 @@ if [ ! -e crow-conv ]; then
     sudo ln -s crow crow-conv
 fi
 
+cd $DIRNAME
+echo "CROW_HOME: $DIRNAME"
+if [ ! -d data ]; then
+    mkdir data
+fi
+if [ ! -d cache ]; then
+    mkdir cache
+fi
+if [ ! -d results ]; then
+    mkdir results
+fi
+
 cd $CPATH

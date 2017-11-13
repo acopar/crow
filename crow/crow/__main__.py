@@ -203,6 +203,8 @@ def factor_init_module(params):
     cache_folder = params['data_folder']
     factor_folder = params['factor_folder']
     factor_cache = params['factor_cache']
+    results_folder = params['results_folder']
+    
     config = get_config(params)
     
     dense = not params['sparse']
@@ -222,6 +224,7 @@ def factor_init_module(params):
     X = factors.data_analyze(cache_folder, factor_folder, config, dimensions, matrices)
     factors.generate_factors(factor_folder, config, dimensions, matrices, X)
     factors.partition_factors(factor_folder, factor_cache, config, dimensions, matrices)
+    factors.prepare_results(results_folder, matrices)
 
 
 def blockmap_init_module(params):

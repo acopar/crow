@@ -9,6 +9,9 @@ from crow.functions.cpufunctions import *
 
 from context import Context
 
+import os
+import psutil
+
 class CPUOperation(Operation):
     def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, bigdot, kernel):
         super(CPUOperation,self).__init__(rank, rev_map, iblock_map, jblock_map, tblock_map)
@@ -29,6 +32,13 @@ class CPUOperation(Operation):
         
         for name, func in FUNCTIONS.items():
             self.__dict__[name] = func
+    
+    def get_mem_info(self):
+        pid = os.getpid()
+        py = psutil.Process(pid)
+        x = py.memory_info()
+        memoryUse = py.memory_info()[0]/1024/1024
+        return memoryUse
 
 
 class CPUContext(Context):
@@ -61,6 +71,7 @@ class CPUContext(Context):
         self.storage = matrix_storage
     
     def __enter__(self):
+        self.initial_memory = self.operation.get_mem_info()
         self.load_gpu()
 
     

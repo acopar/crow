@@ -25,9 +25,9 @@ def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
             if i > 0:
                 c.load_gpu(data=False)
             if select_method == 'nmtf_long':
-                c.run_nmtf_long(debug=flags['debug'], print_err=flags['error'])
+                c.run_nmtf_long(debug=flags['debug'])
             elif select_method == 'nmtf_ding':
-                c.run_nmtf_ding(debug=flags['debug'], print_err=flags['error'])
+                c.run_nmtf_ding(debug=flags['debug'])
             clock = None
             if 'main' in c.timer.t:
                 clock = c.timer.t['main'] / c.number_of_iterations
