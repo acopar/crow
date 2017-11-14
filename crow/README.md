@@ -119,7 +119,8 @@ For example: to factorize ArrayExpress dataset on 1-CPU, 1-GPU and 4-GPU (2x2 bl
 
 Once the process is finished, you will see average iteration time (seconds) and Frobenius norm error function. Factorized data is stored in results folder. 
 
-Note that first run takes longer (up to a few minutes), since the program needs to read large files from disk and convert them to dense numpy or sparse matrices. Subsequent runs on the same data will load faster, because the data is cached. More detailed information on how to reproduce and visualize the results can be found in the [Benchmark section](https://crow.readthedocs.io/en/latest/benchmark.html).
+Note that first run takes longer (up to a few minutes), since the program needs to read large files from disk and convert them to dense numpy or sparse matrices. Subsequent runs on the same data will load faster, because the data is cached. More detailed information on how to reproduce and visualize the results can be found in the [Benchmark section](https://crow.readthedocs.io/en/latest/benchmark.html). We demonstrate application of NMTF including interpretation of results a [co-clustering example](https://github.com/acopar/crow-example).
+
 
 ### Command line arguments
 
@@ -132,7 +133,7 @@ The following options can be set:
 - -k1: left factorization rank. Defines number of latent vectors of matrix U.
 - -k2: right factorization rank. Defines number of latent vectors of matrix V. By default, value of k1 is used. 
 - -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
-- -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. 
+- -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. Useful to reduce memory requirements in GPU applications.
 - -s: use sparse data structures. Do not use this if the matrix density is larger than 10%.
 - -t: additional stopping criteria. By default, factorization will run for the number of iterations specified by -i. Available arguments are e4, e5, e6, e7. For example, when passing e6 parameter, the factorization stops after error function in two consecutive iterations changes for less than 10^-6. 
 
