@@ -123,6 +123,9 @@ class Operation(object):
         self.it = 0
         self.sync_flag = sync
     
+    def get_dynamic(self, matrix, transa='N', key=None):
+        return matrix.get(transa=transa, key=key)
+    
     @wrap_level3
     def dot_wrapper(self, dim, A, B, C, transa='N', transb='N', pos=None):
         func = None
@@ -226,10 +229,12 @@ class Operation(object):
     
     def bigdot_wrapper(self, A, B, C, transa='N', transb='N', pos=None):
         if A.hasTransposed() and transa == 'T':
-            A = A.get(transa=transa)
+            A = self.get_dynamic(A, transa=transa)
+            #A = A.get(transa=transa)
             C.set(self.bigdot(A, B.get(), C.get(), transb=transb))
         else:
-            C.set(self.bigdot(A.get(), B.get(), C.get(), transa=transa, transb=transb))
+            A = self.get_dynamic(A)
+            C.set(self.bigdot(A, B.get(), C.get(), transa=transa, transb=transb))
     
     @vertical_operation
     def dot_vertical(self, A, B, C, transa='N', transb='N', pos=None):

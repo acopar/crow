@@ -8,6 +8,7 @@ import skcuda.linalg as linalg
 
 from crow.utils import *
 from crow.interpreter.operations import *
+from crow.interpreter.matrix import *
 from crow.functions.gpufunctions import *
 from crow.transfer.cputransfer import npzeros
 from crow.transfer.gputransfer import *
@@ -43,6 +44,27 @@ class GPUOperation(Operation):
         
         return (y-x)/1024/1024
     
+    def to_gpu(self, matrix, dense=True):
+        for bid in matrix.blocks:
+            matrix.type = 'gpu'
+            if dense == False:
+                matrix.blocks[bid] = cusparse.CSR.to_CSR(matrix.blocks[bid])
+                matrix.blocks_t[bid] = cusparse.CSR.to_CSR(matrix.blocks[bid].T)
+            else:
+                matrix.blocks[bid] = togpu(matrix.blocks[bid])
+    
+    def from_gpu(self, matrix, dense=True):
+        for bid in matrix.blocks:
+            matrix.blocks[bid] = matrix.blocks[bid].get()
+    
+    def get_dynamic(self, matrix, transa='N', key=None):
+        if matrix.swap == True:
+            X = matrix.get(transa=transa, key=key)
+            return togpu(X)
+        else:
+            return matrix.get(transa=transa, key=key)
+        
+    
 class GPUContext(Context):
     def __init__(self, inputs, dimensions, config, flags):
         comm = MPI.COMM_WORLD
@@ -61,37 +83,30 @@ class GPUContext(Context):
         self.operation = GPUOperation(self.rank, self.rev_map, 
             self.iblock_map, self.jblock_map, self.tblock_map, _bigdot, kernel)
     
+    def set_matrix(self, X, bid, key, dim):
+        if key not in self.storage:
+            model = self.models[key]
+            self.storage[key] = Matrix(None, Xt=None, key=bid, model=model, cls='gpu')
+        self.super_set_matrix(X, bid, key, dim)
+    
+    def new_matrix(self, bid, key, dim):
+        if key not in self.storage:
+            model = self.models[key]
+            self.storage[key] = Matrix(None, Xt=None, key=bid, model=model, cls='gpu')
+        self.super_new_matrix(bid, key, dim)
+    
     def load_gpu(self, data=True):
         self.load(data=data)
-        
-        matrix_storage = {}
-        
+
         for m in self.storage:
-            if type(self.storage[m]) == type({}):
-                for bid in self.storage[m]:
-                    data = None
-                    X = self.storage[m][bid]
-                    if m in self.data_vars and self.dense == False:
-                        Xg = cusparse.CSR.to_CSR(X)
-                        Xtg = cusparse.CSR.to_CSR(X.T)
-                        data = (Xg, Xtg)
-                    else:
-                        data = (togpu(X), None)
-                    
-                    if m not in matrix_storage:
-                        matrix_storage[m] = Matrix(data[0], Xt=data[1], key=bid, model=self.models[m])
-                    else:
-                        matrix_storage[m].append(data[0], Xt=data[1], key=bid)
+            if m in self.data_vars and self.dense == False:
+                self.operation.to_gpu(self.storage[m], dense=False)
+            elif m in self.data_vars and self.lazy == True:
+                self.storage[m].swap = True
+                self.storage[m].type = 'cpu'
             else:
-                matrix_storage[m] = self.storage[m]
-        self.storage = matrix_storage
-        
-        #for m in self.storage:
-        #    if m not in self.data_vars:
-        #        M = self.storage[m][0]
-        #        self.storage[m] = (togpu(M), None)
-    
-    
+                self.operation.to_gpu(self.storage[m])
+            
     def __enter__(self):
         self.load()
         
@@ -110,15 +125,10 @@ class GPUContext(Context):
         self.load_gpu()
     
     def exit(self):
-        cpu_storage = {}
         for m in self.storage:
             if m not in self.data_vars:
                 matrix = self.storage[m]
-                cpu_storage[m] = {}
-                for bid in self.get_blocks():
-                    #matrix.switch(bid)
-                    cpu_storage[m][bid] = matrix.fetch(key=bid)
-        self.storage = cpu_storage
+                self.operation.from_gpu(matrix)
         self.ctx.detach()
 
     
