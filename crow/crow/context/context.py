@@ -62,6 +62,7 @@ class Context(object):
         self.flags = flags
         self.prev = None
         self.now = None
+        self.lazy = False
         
         self.max_iter = config['max_iter']
         self.balanced = True
@@ -98,9 +99,29 @@ class Context(object):
         {'type': 'error', 'name': 'E', 'size': '11'}]
         
         self.number_of_iterations = self.max_iter - 2
+        
+        if len(self.block_map[0]) > 1 and config['context'] == 'gpu':
+            self.lazy = True
+            print "Lazy made activated"
     
     def get_blocks(self):
         return self.block_map[0]
+
+    def super_set_matrix(self, X, bid, key, dim):
+        self.storage[key].append(X, Xt=None, key=bid)
+        if dim[0] not in self.dimensions:
+            self.dimensions[dim[0]] = {}
+        self.dimensions[dim[0]][bid] = X.shape[0]
+        
+        if dim[1] not in self.dimensions:
+            self.dimensions[dim[1]] = {}
+        self.dimensions[dim[1]][bid] = X.shape[1]
+    
+    def super_new_matrix(self, bid, key, dim):
+        x = get_dimension(self.dimensions, dim[0], bid)
+        y = get_dimension(self.dimensions, dim[1], bid)
+        
+        self.storage[key].append(self.operation.czeros(x,y), key=bid)
 
     def load(self, data=True):
         data_vars = []
@@ -146,26 +167,6 @@ class Context(object):
                 self.models[key] = '0'
             self.models[key] = 'ij'
         
-        def set_matrix(X, bid, v, dim):
-            if v not in self.storage:
-                self.storage[v] = {}
-            self.storage[v][bid] = X
-            if dim[0] not in self.dimensions:
-                self.dimensions[dim[0]] = {}
-            self.dimensions[dim[0]][bid] = X.shape[0]
-            
-            if dim[1] not in self.dimensions:
-                self.dimensions[dim[1]] = {}
-            self.dimensions[dim[1]][bid] = X.shape[1]
-        
-        def new_matrix(bid, v, dim):
-            dim = sizes[v]
-            x = get_dimension(self.dimensions, dim[0], bid)
-            y = get_dimension(self.dimensions, dim[1], bid)
-            if v not in self.storage:
-                self.storage[v] = {}
-            self.storage[v][bid] = self.operation.czeros(x,y)
-        
         for idx, jdx in self.block_map[0]:
             bid = (idx, jdx)
             
@@ -177,32 +178,30 @@ class Context(object):
                             filename = to_path(self.data_folder, 's%d_%d.npz' % (idx, jdx))
                         else:
                             filename = to_path(self.data_folder, 'i%d_%d.npz' % (idx, jdx))
-                    #X, Xt = self.load_dataset(filename, self.dense)
+                    
                     X = self.load_data(filename, self.dense)
-                    set_matrix(X, bid, v, sizes[v])
+                    self.set_matrix(X, bid, v, sizes[v])
             
             factor_file = to_path(self.factor_folder, '%d_%d.pkl' % (idx, jdx))
             factors = load_file(factor_file)
             
             for v in factor_vars:
-                set_matrix(factors[v], bid, v, sizes[v])
+                self.set_matrix(factors[v], bid, v, sizes[v])
                 
             for v in error_vars:
-                new_matrix(bid, v, sizes[v])
+                self.new_matrix(bid, v, sizes[v])
 
             for v in empty_vars:
-                new_matrix(bid, v, sizes[v])
+                self.new_matrix(bid, v, sizes[v])
             
             for v in param_vars:
-                dim = sizes[v]
                 if v not in self.dimensions:
                     raise Exception("Undefined parameter %s" % v)
                 p = self.dimensions[v]
-                x = get_dimension(self.dimensions, dim[0], bid)
-                y = get_dimension(self.dimensions, dim[1], bid)
-                if v not in self.storage:
-                    self.storage[v] = {}
-                self.storage[v][bid] = self.operation.czeros(x,y) + p
+                self.number_matrix(bid, v, sizes[v])
+                tmp = self.storage[v].get(key=bid)
+                self.storage[v].set(tmp + p, key=bid)
+    
     
     def load_data(self, filename, dense):
         check_file(filename)
@@ -226,9 +225,9 @@ class Context(object):
         if not results_folder is None:
             for key in output_vars:
                 storage_folder = to_path(results_folder, key)
-                for bid in self.storage[key]:
+                for bid in self.storage[key].blocks:
                     storage_out = to_path(storage_folder, '%d_%d.pkl' % (bid[0], bid[1]))
-                    dump_file(storage_out, self.storage[key][bid])
+                    dump_file(storage_out, self.storage[key].get(key=bid))
     
     
     def check_stop(self, E=None):

@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 
 class Matrix():
-    def __init__(self, X, Xt=None, key=None, model='ij'):
+    def __init__(self, X, Xt=None, key=None, model='ij', cls=None, swap=False):
         self.blocks = {}
         self.blocks_t = {}
         self.X = X
@@ -10,14 +10,21 @@ class Matrix():
         
         self.key = key
         self.model = model
-        self.append(X, Xt=Xt, key=key)
+        self.swap = swap
+        if not X is None:
+            self.append(X, Xt=Xt, key=key)
         
-        self.type = 'gpu'
-        if type(self.X) == np.ndarray or type(self.X) == scipy.sparse.csr.csr_matrix:
+        if cls != None:
+            self.type = cls
+        elif type(self.X) == np.ndarray or type(self.X) == scipy.sparse.csr.csr_matrix:
             self.type = 'cpu'
         elif type(self.X) == np.matrixlib.defmatrix.matrix:
             print "Warning: using matrixlib.defmatrix.matrix type"
             self.type = 'cpu'
+        elif type == type(None):
+            raise Exception("Error: trying to set Nonetype matrix")
+        else:
+            self.type = 'gpu'
     
     def get(self, transa='N', key=None, col=None, row=None):
         if key is None:

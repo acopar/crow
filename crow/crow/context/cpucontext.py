@@ -40,6 +40,8 @@ class CPUOperation(Operation):
         memoryUse = py.memory_info()[0]/1024/1024
         return memoryUse
 
+    def get_dynamic(self, matrix, transa='N', key=None):
+        return matrix.get(transa=transa, key=key)
 
 class CPUContext(Context):
     def __init__(self, inputs, dimensions, config, flags):
@@ -55,20 +57,20 @@ class CPUContext(Context):
         self.operation = CPUOperation(self.rank, self.rev_map, 
             self.iblock_map, self.jblock_map, self.tblock_map, _bigdot, kernel)
     
+    def set_matrix(self, X, bid, key, dim):
+        if key not in self.storage:
+            model = self.models[key]
+            self.storage[key] = Matrix(None, Xt=None, key=bid, model=model, cls='cpu')
+        self.super_set_matrix(X, bid, key, dim)
+    
+    def new_matrix(self, bid, key, dim):
+        if key not in self.storage:
+            model = self.models[key]
+            self.storage[key] = Matrix(None, Xt=None, key=bid, model=model, cls='cpu')
+        self.super_new_matrix(bid, key, dim)
+    
     def load_gpu(self, data=True):
         self.load(data=data)
-        matrix_storage = {}
-        for m in self.storage:
-            if type(self.storage[m]) == type({}):
-                for bid in self.storage[m]:
-                    data = self.storage[m][bid]
-                    if m not in matrix_storage:
-                        matrix_storage[m] = Matrix(data, key=bid, model=self.models[m])
-                    else:
-                        matrix_storage[m].append(data, key=bid)
-            else:
-                matrix_storage[m] = self.storage[m]
-        self.storage = matrix_storage
     
     def __enter__(self):
         self.initial_memory = self.operation.get_mem_info()
@@ -84,15 +86,6 @@ class CPUContext(Context):
         
         if self.test == True:
             return
-        self.exit()
-    
+
     def exit(self):
-        cpu_storage = {}
-        for m in self.storage:
-            if m not in self.data_vars:
-                matrix = self.storage[m]
-                cpu_storage[m] = {}
-                for bid in self.get_blocks():
-                    #matrix.switch(bid)
-                    cpu_storage[m][bid] = matrix.fetch(key=bid)
-        self.storage = cpu_storage
+        pass
