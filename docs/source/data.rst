@@ -10,8 +10,6 @@ Crow docker images makes use of the following external volumes.
 * results: this is where the factorized data will be stored.
 * cache: path to directory, where the application stores intermediate files. Starting with empty folder, the cache can take several gigabytes, depending on your data so make sure that you have enough space on the partition. You can safely clean this folder, but note that it may take some time to process the data again. 
 
-Open the ``docker-compose.yml`` directory and make sure that the mount directories point to the desired locations. By default, mount points for each volume points to a folder in the current working directory. Refer to the :ref:`data section  <data>` for more information. 
-
 You can use symbolic links to connect path to your data, like this:
 
 ::
@@ -21,14 +19,13 @@ You can use symbolic links to connect path to your data, like this:
     mkdir -p ../tmp/crow-cache
     ln -s ../tmp/crow-cache cache
 
-Alternatively, change ``docker-compose.yml`` to point to the desired locations, for example:
+
+Alternatively, customize docker command and modify the volume paths to point to the desired locations:
 
 ::
 
-    - ./crow:/home/crow/src
-    - /mnt/data:/home/crow/data:ro
-    - ../tmp/crow-cache:/home/crow/cache
-    - ./results:/home/crow/results
+    docker run -d "$runtime" --name="crow" -p 22 -v $PWD/crow:/home/crow/crow -v $PWD/data:/home/crow/data:ro -v $PWD/cache:/home/crow/cache -v $PWD/results:/home/crow/results --rm acopar/crow
+
 
 
 .. _data_manipulation:

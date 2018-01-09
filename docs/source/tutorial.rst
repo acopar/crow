@@ -47,15 +47,15 @@ Command line arguments
 The following options can be set:
 
 * -b: block configuration, for example 2x2.
-* -e: calculate and print error function in each iteration. This can slow down factorization considerably.
+* -e: calculate and print error function in each iteration.
 * -g: use this argument to run on GPUs. By default, only CPU cores will be used.
 * -i: maximum number of iterations, default is 100.
 * -k1: left factorization rank. Defines number of latent vectors of matrix U.
 * -k2: right factorization rank. Defines number of latent vectors of matrix V. By default, value of k1 is used. 
 * -o: impose orthogonality in factors U and V. By default non-orthogonal NMTF will be used. 
-* -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. 
+* -p: parallelization degree, by default number of blocks equals to parallelization degree, but you can use parallelization degree smaller than the number of blocks. Useful to reduce memory requirements in GPU applications.
 * -s: use sparse data structures. Do not use this if the matrix density is larger than 10%.
-* -t: additional stopping criteria. By default, factorization will run for number of iterations specified by -i.
+* -t: additional stopping criteria. By default, factorization will run for the number of iterations specified by -i. Available arguments are e4, e5, e6, e7. For example, when passing e6 parameter, the factorization stops after error function in two consecutive iterations changes for less than 10^-6. 
 
 Arguments:
 

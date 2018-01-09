@@ -5,17 +5,14 @@ Host requirements
 
 Docker install requirements for all environments:
 
-* `docker >= 1.12.9 <https://docs.docker.com/engine/installation>`_
-* `docker-compose >= 1.9.0 <https://docs.docker.com/compose/install/>`_
+* `docker-ce >= 17.03 <https://docs.docker.com/engine/installation>`_
 
 Requirements for GPU environments:
 
 * `CUDA >= 8.0 <https://developer.nvidia.com/cuda-downloads>`_
-* `nvidia-docker >= 1.0.1 <https://github.com/NVIDIA/nvidia-docker>`_
-* `nvidia-docker-compose <https://github.com/eywalker/nvidia-docker-compose>`_
-* `Python library yaml <https://wiki.python.org/moin/YAML>`_.
+* `nvidia-docker >= 2.0 <https://github.com/NVIDIA/nvidia-docker>`_
 
-If you don't have these programs on the system, you can install them using ``make`` (see below) or follow the links above to install them manually. Note that you still need to call ``make`` to install crow-specific entry points, user and group configuration and ssh keys.
+If you don't have these programs on the system, you can install them using ``make`` (see below) or install them manually. If you install dependencies manually, run ``scripts/install-crow.sh`` after to install ``crow`` executables.
 
 
 Quick setup
@@ -28,28 +25,22 @@ You can use the provided install scripts to setup requirements automatically. Cu
     git clone https://github.com/acopar/crow && cd crow
 
 
-For machines without CUDA-enabled GPU devices, use CPU version.
+Install the framework and its dependencies (Ubuntu users):
 
 ::
     
     make install
     
 
-If you have GPU devices present, use the following command to also install GPU dependencies.
-
-::
-
-    make install-gpu
 
 
-
-Install CUDA
+CUDA
 ------------
 
 If you do not have nvidia driver and CUDA on your system, refer to this section: :ref:`CUDA install guide <manual_cuda>`.
 
 
-Install docker engine
+Docker engine
 ---------------------
 
 Here are instructions for Ubuntu Linux. For other Linux distributions and other platforms refer to the `Official docker install guide <https://docs.docker.com/engine/installation>`_.
@@ -63,21 +54,38 @@ Here are instructions for Ubuntu Linux. For other Linux distributions and other 
     sudo apt-get install docker-ce
 
 
-docker-compose
---------------
-
-Download a recent version of docker compose:
-
-::
-    
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.11.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod a+x /usr/local/bin/docker-compose
-
-
-nvidia-docker
+Nvidia-docker
 -------------
 
-Download and install nvidia-docker. These instructions will work on most Linux distributions. Alternatively, Ubuntu and CentOS users can also use the `provided deb and rpm packages <https://github.com/NVIDIA/nvidia-docker>`_. This is for GPU environments only.
+Download and install nvidia-docker. These instructions will work on most Linux distributions. Alternatively, Ubuntu and CentOS users can also use the `provided deb and rpm packages <https://github.com/NVIDIA/nvidia-docker>`_. This software is for GPU hosts only.
+
+::
+
+    curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+    curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu16.04/amd64/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+    sudo apt-get update
+    
+    # Install nvidia-docker2 and reload the Docker daemon configuration
+    sudo apt-get install -y nvidia-docker2
+    sudo pkill -SIGHUP dockerd
+
+
+Add user to docker group
+------------------------
+
+In order to execute docker commands as a regular user, you need to have docker privileges:
+
+::
+
+    sudo gpasswd -a $(whoami) docker    
+    
+
+
+
+Legacy nvidia-docker
+====================
+
+Use of nvidia-docker v1.0 is deprecated, we recommend the new v2.0, which is supported in the latest version of ``crow``. For backward compatibility, here are instructions on how to install the legacy version:
 
 ::
 
@@ -91,23 +99,11 @@ In order to use nvidia-docker, you need to run ``nvidia-docker-plugin`` at boot.
     sudo -b nohup nvidia-docker-plugin > /tmp/nvidia-docker.log
 
 
-If you have systemd, you can enable a nvidia-docker service like this:
-
-::
-
-    git clone https://github.com/acopar/crow
-    cd crow/scripts/
-    sudo cp service/nvidia-docker.service /lib/systemd/system/nvidia-docker.service
-    sudo ln -s /lib/systemd/system/nvidia-docker.service /etc/systemd/system/nvidia-docker.service
-    sudo systemctl enable nvidia-docker
-    sudo systemctl start nvidia-docker
-
-
 
 nvidia-docker-compose
 ---------------------
 
-Download and install nvidia-docker-compose. For GPU environment only.
+Legacy versions also require ``nvidia-docker-compose`` library:
 
 ::
 
@@ -128,28 +124,3 @@ or using the packages from your distribution.
     
     sudo apt-get install python-yaml
     
-
-Add user to docker group
-------------------------
-
-In order to execute docker commands as a regular user, you need to be in docker group.
-
-::
-
-    sudo gpasswd -a $(whoami) docker    
-    
-
-Troubleshooting
----------------
-
-Default user in docker image has user id 1000, which may differ from the id of your host user. To avoid permission trouble inside the container, run the following script:
-
-::
-
-    scripts/user_permissions.sh
-
-
-This must be re-run after you start a clean image and after each reinstall.
-
-
-If additional problems occur, post a `issue on github <https://github.com/acopar/crow/issues>`_ so we can fix them.

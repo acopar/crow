@@ -14,7 +14,6 @@ Crow is a multi-GPU and multi-CPU implementation of non-negative matrix tri-fact
 
    install
    docker
-   container
    manual
    tutorial
    data
