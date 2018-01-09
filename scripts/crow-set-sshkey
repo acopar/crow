@@ -1,11 +1,11 @@
 #!/bin/bash
 
 CPATH=$(pwd)
-DIRNAME="$(dirname $0)/.."
-cd "$DIRNAME"
+#DIRNAME="$(dirname $0)/.."
+#cd "$DIRNAME"
 
-cache=$(cat docker-compose.yml | grep '/home/crow/cache' | sed 's/.*-[[:space:]]*\([^:]*\):\/home\/crow\/cache/\1/')
-DST="$DIRNAME/$cache"
+#cache=$(cat docker-compose.yml | grep '/home/crow/cache' | sed 's/.*-[[:space:]]*\([^:]*\):\/home\/crow\/cache/\1/')
+DST="$CPATH/$cache"
 
 if [[ ! -d "$DST" ]]; then
     echo "Unable to find directory $DST"
