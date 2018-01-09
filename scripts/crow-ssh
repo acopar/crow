@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="crow_head_1"
+NAME="crow"
 PORT=$(docker ps -f name=$NAME --format '{{.Ports}}' | sed 's/.*:\([0-9]*\)->.*/\1/g')
 SSHKEY=~/.ssh/crow
 

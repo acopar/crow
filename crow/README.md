@@ -127,7 +127,7 @@ Note that first run takes longer (up to a few minutes), since the program needs 
 The following options can be set:
 
 - -b: block configuration, for example 2x2.
-- -e: calculate and print error function in each iteration. This can slow down factorization considerably. By default, any additional convergence tests (see stopping criteria) are performed against first norm of factor U.
+- -e: calculate and print error function in each iteration. This can slow down factorization considerably.
 - -g: use this argument to run on GPUs. By default, only CPU cores will be used.
 - -i: maximum number of iterations, default is 10, but you should increase this number to get satisfactory results. 
 - -k1: left factorization rank. Defines number of latent vectors of matrix U.

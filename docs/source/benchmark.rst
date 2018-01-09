@@ -16,6 +16,8 @@ This script downloads five datasets that have already been converted into coordi
 * `Fetus <http://file.biolab.si/crow/fetus.coo>`_: 25569x25608, file size: 622M
 * `Retina <http://file.biolab.si/crow/retina.coo>`_: 25823x25822, file size: 2.9GB
 * `Cochlea <http://file.biolab.si/crow/cochlea.coo>`_: 25824x25824, file size: 5.6GB
+* `TCGA-Methyl <http://file.biolab.si/crow/TCGA-Methyl.npz>`_: 10181x485577, file size: 19GB
+* `TCGA-Methyl (cancer gene subset) <http://file.biolab.si/crow/TCGA-Methyl-cancer.npz>`_: 10181x14299, file size: 556MB
 
 
 Benchmark
@@ -125,3 +127,28 @@ After the installation is complete you can run crowpl module like this:
 ::
 
     python crowpl -a speedup ArrayExpress TCGA-BRCA fetus retina cochlea
+
+
+Co-clustering example
+=====================
+
+Setup instructions
+------------------
+
+Before you run this example, you need to install CROW framework and start the container.
+
+
+::
+    
+    git clone https://github.com/acopar/crow-example
+    cd crow-example
+    pip install -r requirements.txt 
+    
+
+Run Experiments
+---------------
+
+::
+
+    python main.py
+    

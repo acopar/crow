@@ -1,0 +1,7 @@
+#!/bin/bash
+
+NAME="crow"
+imageID=$(docker ps -q --filter name="$NAME")
+if [ ! -z "$imageID" ]; then
+    docker stop $imageID
+fi

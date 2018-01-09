@@ -1,4 +1,5 @@
 #!/bin/bash
 
+NAME="crow"
 CMD=$(basename $0)
-docker exec -i crow_head_1 su -m crow -l -s /bin/bash -c "$(echo $CMD $@)"
+docker exec -i $NAME su -m crow -l -s /bin/bash -c "$(echo $CMD $@)"

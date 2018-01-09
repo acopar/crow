@@ -1,7 +1,8 @@
 #!/bin/bash
 
+NAME="crow"
 if [ $# -eq 0 ]; then
-    docker exec -it crow_head_1 su -l
+    docker exec -it $NAME su -l
 else
-    docker exec -it crow_head_1 su -l -s /bin/bash -c "$*"
+    docker exec -it $NAME su -l -s /bin/bash -c "$*"
 fi
