@@ -13,18 +13,12 @@ The most convenient way to setup the environment is to use provided docker image
     cd crow
 ```
 
-#### Install for CPU-only environment
+#### Install
 
-This script skips CUDA and nvidia-docker installation. Useful for systems without CUDA-enabled GPU devices. This command also updates crow docker image to the latest version. 
+Install script will autodetect if you have GPUs available.
 
 ```sh
     make install
-```
-
-#### Install for GPU environment
-
-```sh
-    make install-gpu
 ```
 
 #### Start docker container
