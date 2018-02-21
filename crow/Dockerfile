@@ -6,9 +6,10 @@ RUN apt-get update -y && apt-get install -y git vim sudo openssh-server python-p
     python-virtualenv gcc gfortran binutils python-dev libffi-dev libzmq3-dev locate
 
 # compile openmpi with cuda support
-RUN wget https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.0.tar.gz
-RUN tar xzf openmpi-2.0.0.tar.gz
-WORKDIR /openmpi-2.0.0
+RUN wget https://www.open-mpi.org/software/ompi/v3.0/downloads/openmpi-3.0.0.tar.gz
+#RUN wget https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.0.tar.gz
+RUN tar xzf openmpi-3.0.0.tar.gz
+WORKDIR /openmpi-3.0.0
 RUN ./configure --with-cuda=/usr/local/cuda --prefix=/openmpi
 RUN make -j$(nproc) && make install
 # for cpu only environments
@@ -63,12 +64,6 @@ RUN useradd -s /bin/bash -m ${USERNAME}
 # change passwords
 RUN echo "${USERNAME}:${USERNAME}" | chpasswd
 
-# ssh configuration
-RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
-RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
-
 RUN mkdir /var/run/sshd
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
 # Skipped for compatibility with automatic build && locale-gen
@@ -97,6 +92,7 @@ RUN virtualenv -p python --system-site-packages venv
 RUN echo 'cd ${HOME}' >> .profile
 RUN echo '. /etc/profile.d/crow.sh' >> .profile
 RUN echo '. ${HOME}/venv/bin/activate' >> .profile
+
 RUN git clone https://github.com/acopar/crow src
 RUN mv src/.git* . && mv src/* .
 RUN bash -c "source ~/venv/bin/activate && cd crow && python setup.py install"
@@ -108,7 +104,6 @@ RUN echo "from cuda_cffi import cusparse" >> build_cusparse.py
 
 COPY start.sh start.sh
 COPY users.sh users.sh
-COPY keys.sh keys.sh
 
 EXPOSE 22
 CMD ["/start.sh"]
