@@ -2,7 +2,7 @@
 def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
     max_iter = config['max_iter']
     select_method = inputs['method']
-    output = outputs['output']
+    #output = outputs['output']
     
     context = config['context']
     if context == 'gpu':
