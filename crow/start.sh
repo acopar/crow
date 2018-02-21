@@ -16,6 +16,6 @@ if [ ! -z "$(which locale-gen)" ]; then
 fi
 
 ./users.sh
-./keys.sh
+#./keys.sh
 echo "Container ready."
 /usr/sbin/sshd -D

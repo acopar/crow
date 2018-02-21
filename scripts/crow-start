@@ -1,7 +1,6 @@
 #!/bin/bash
 
 crow-set-uid
-crow-set-sshkey
 
 context=$1
 runtime='--runtime='

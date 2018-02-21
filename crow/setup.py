@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 import os
 
 MAJOR               = 0
-MINOR               = 1
+MINOR               = 2
 MICRO               = 0
 ISRELEASED          = False
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
@@ -38,9 +38,9 @@ params = {
 }
 
 setup(name='crow',
-    version='0.1',
+    version='0.2',
     description='Parallel matrix factorization framework.',
-    url='http://bitbucket.org/acopar/crow',
+    url='https://github.com/acopar/crow',
     author='Andrej Copar',
     license='LGPL',
     packages=find_packages(),
