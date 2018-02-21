@@ -11,6 +11,7 @@ class Matrix():
         self.key = key
         self.model = model
         self.swap = swap
+        self.dirty = False
         if not X is None:
             self.append(X, Xt=Xt, key=key)
         
@@ -55,7 +56,7 @@ class Matrix():
             return X.get()
     
     def hasTransposed(self):
-        if self.type == 'gpu' and self.Xt is None:
+        if self.type == 'gpu' and self.key not in self.blocks_t:
             return False
         return True
     
@@ -64,6 +65,7 @@ class Matrix():
             key = self.key
         self.blocks[key] = X
         self.X = self.blocks[key]
+        self.dirty = True
     
     def append(self, X, Xt=None, key=None):
         if key is None:

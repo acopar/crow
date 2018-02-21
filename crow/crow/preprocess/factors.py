@@ -34,8 +34,8 @@ def measure_data(folder, config, label=None):
             data = load_numpy(filename)
             X_cpu = data
             n, m = X_cpu.shape
-            if X_cpu.dtype != np.float32:
-                raise Exception("Error: Data type must be float32")
+            #if X_cpu.dtype != np.float32:
+            #    raise Exception("Error: Data type must be float32")
             
             if i not in iavail:
                 N += n
@@ -99,6 +99,10 @@ def generate_factors(factor_folder, config, dimensions, matrices, X):
     init = config['init']
     seed = config['seed']
     storage = {}
+    double = config['double']
+    dtype = np.float32
+    if double:
+        dtype = np.float64
     
     for d in matrices:
         key = d['name']
@@ -114,9 +118,9 @@ def generate_factors(factor_folder, config, dimensions, matrices, X):
             shp = (int(shp[0]), int(shp[1]))
             
             if init == 'random':
-                storage[key] = initialize.nprandom(shp[0], shp[1], seed=seed)
+                storage[key] = initialize.nprandom(shp[0], shp[1], seed=seed, dtype=dtype)
             elif init == 'zeros':
-                storage[key] = initialize.zeros(shp[0], shp[1])
+                storage[key] = initialize.zeros(shp[0], shp[1], dtype=dtype)
             elif init == 'vcol':
                 if dim[0] == 'n' and dim[1] in ['k', 'l']:
                     storage[key] = initialize.racol_initialize(X, shp, axis=1, seed=seed)
@@ -183,6 +187,7 @@ def partition_factors(factor_folder, factor_cache, config, dimensions, matrices)
                         block_factors[key] = storage[key][j]
                     else:
                         block_factors[key] = storage[key]
+            
             fblock_file = to_path(factor_cache,  '%d_%d.pkl' % (i, j))
             dump_file(fblock_file, block_factors)
 

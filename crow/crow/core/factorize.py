@@ -17,6 +17,7 @@ def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
     clock_list = []
     info = None
     clock = None
+    history = []
     
     c.__enter__()
     c.dimensions['1'] = 1
@@ -25,9 +26,11 @@ def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
             if i > 0:
                 c.load_gpu(data=False)
             if select_method == 'nmtf_long':
-                c.run_nmtf_long(debug=flags['debug'])
+                history = c.run_nmtf_long(debug=flags['debug'])
             elif select_method == 'nmtf_ding':
-                c.run_nmtf_ding(debug=flags['debug'])
+                history = c.run_nmtf_ding(debug=flags['debug'])
+            else:
+                print "Method %s not found" % select_method
             clock = None
             if 'main' in c.timer.t:
                 clock = c.timer.t['main'] / c.number_of_iterations
@@ -37,7 +40,7 @@ def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
     
     c.exit()
     data = {'timer': c.timer.t, 'itertime': clock_list, 'rulefile': inputs['method'],
-        'info': None, 'history': [], 'config': config}
+        'info': None, 'history': history, 'config': config}
     
     out = outputs['output']
     if out:

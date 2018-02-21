@@ -45,6 +45,7 @@ def main():
     parser = argparse.ArgumentParser(version=VERSION, description='Crow')
     parser.add_argument("-a", "--arguments", default='', help='Pass arguments in key=value pairs separated with commas (deprecated, use -k1 and -k2 instead)')
     parser.add_argument("-b", "--blocks", help="Block configuration (default 1x1)", default='1x1')
+    parser.add_argument("-d", "--double", help='Double precision', action="store_true")
     parser.add_argument("-e", "--error", help="Print error function", action="store_true")
     parser.add_argument("-f", "--force", help='Force all steps. Overwrite files during execution.', action="store_true")
     parser.add_argument("-g", "--gpu", help="Run on GPU", action="store_true")
@@ -55,6 +56,10 @@ def main():
     parser.add_argument("-m", "--imbalanced", help="Imbalanced partitioning", action="store_true")
     parser.add_argument("-n", "--init", help="Initialization (default random)", default='random')
     parser.add_argument("-o", "--orthogonal", help='Run with orthogonal constraints', action="store_true")
+    
+    parser.add_argument("-M", "--method", help='Override method selection', default='')
+    parser.add_argument("-S", "--seed", help='Override seed', type=int, default=42)
+    
     # do not specify unless different from blocks
     parser.add_argument("-p", "--parallel", type=int, default=None, help='Parallelization degree (default: number of blocks)')
     parser.add_argument("-s", "--sparse", help="Run sparse", action="store_true")
@@ -77,12 +82,21 @@ def main():
     
     data_file = args.args[0]
     if not os.path.isfile(data_file):
-        data_base = os.path.basename(data_file)
-        data_file2 = to_path(DATA, data_base)
-        if not os.path.isfile(data_file2):
-            raise Exception("File not found: %s" % data_file)
-        data_file = data_file2
+        ext = os.path.splitext(data_file)[1]
+        exts = ['.npz', '.coo', '']
+        if ext != '':
+            exts = [ext]
         
+        for ext in exts:
+            data_base = '%s%s' % (os.path.basename(data_file), ext)
+            data_file2 = to_path(DATA, data_base)
+            if os.path.isfile(data_file2):
+                data_file = data_file2
+                break
+    
+    if not os.path.isfile(data_file):
+        raise Exception("File not found: %s" % data_file)
+    
     context = 'cpu'
     if args.gpu == True:
         context = 'gpu'
@@ -90,6 +104,9 @@ def main():
     rulefile = 'nmtf_long'
     if args.orthogonal:
         rulefile = 'nmtf_ding'
+    
+    if args.method:
+        rulefile = args.method
     
     arguments = args.arguments
     if arguments == '':
@@ -107,11 +124,12 @@ def main():
     sync = True
     if args.no_transfer:
         sync = False
-    
+    data_label = os.path.splitext(os.path.basename(data_file))[0]
     params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'arguments': arguments, 
         'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': rulefile, 
-        'init': args.init, 'imbalanced': args.imbalanced, 'sync': sync,
-        'verbose': args.Verbose, 'force': args.force,
+        'init': args.init, 'imbalanced': args.imbalanced, 'sync': sync, 'seed': args.seed,
+        'verbose': args.Verbose, 'force': args.force, 'double': args.double,
+        'output_folder': to_path(RESULTS, 'history', data_label, rulefile, args.k1),
         'data_file': data_file, 'stop': args.stop}
     
     run_wrapper(params)
@@ -136,7 +154,7 @@ def run_wrapper(params, merge=True):
         'multiplier': 1, 'error': True, 'override': False, 'debug': None, 'test': False, 'imbalanced': False,
         'data_folder': data_folder, 'data_file': data_file, 'factor_folder': factor_folder, 
         'results_folder': results_folder, 'output_folder': output_folder, 'factor_cache': factor_cache,
-        'blockmap_file': blockmap_file, 'stop': ''
+        'blockmap_file': blockmap_file, 'stop': '', 'double': False,
     }
     
     params = from_template(template, params)
@@ -144,6 +162,7 @@ def run_wrapper(params, merge=True):
     data_cache_module(params)
     factor_init_module(params)
     blockmap_init_module(params)
+    sys.stdout.flush()
     out, err = mpiexec(params['parallel'], params)
     if merge:
         finalize.merge_and_test(params)
@@ -171,7 +190,7 @@ def get_config(params):
         if params['parallel'] > 1 and params['sparse']:
             imbalanced = True
     
-    d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': 0, 
+    d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': 42, 'double': params['double'],
         'sparse': params['sparse'], 'imbalanced': imbalanced, 'init': params['init'], 
         'parallel': params['parallel'], 'context': context, 'multiplier': params['multiplier']}
     return d
@@ -270,7 +289,7 @@ def core():
     
     flags = {'dense': dense, 'error': params['error'], 'test': params['test'], 
         'override': params['override'], 'debug': params['debug'], 'sync': params['sync'],
-        'stop': params['stop']
+        'stop': params['stop'], 'double': params['double']
     }
     
     dimensions = {}

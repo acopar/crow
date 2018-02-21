@@ -122,8 +122,9 @@ def sparse_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)], balan
             csv_tosparse_fast(data_file, pkl_sparse)
         elif input_type == 'npz':
             ensure_dir(pkl_sparse)
-            os.symlink(data_abs, pkl_sparse)
-    
+            X = csr_matrix(load_numpy(data_abs))
+            save_numpy(pkl_sparse, X)
+
     blocks = [b for b in blocks if b != (1,1)]
     if balanced == True:
         balanced_slicing(pkl_sparse, data_folder, blocks=blocks)

@@ -87,3 +87,5 @@ def measure_error(params):
     err = E.sum()
     if err != 0.0:
         print 'Error function:', err
+
+    

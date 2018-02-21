@@ -17,8 +17,8 @@ from cuda_cffi import cusparse
 from context import Context
 
 class GPUOperation(Operation):
-    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, bigdot, kernel):
-        super(GPUOperation,self).__init__(rank, rev_map, iblock_map, jblock_map, tblock_map)
+    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, bigdot, kernel, dtype):
+        super(GPUOperation,self).__init__(rank, rev_map, iblock_map, jblock_map, tblock_map, dtype)
 
         self.dot = dot
         self.bigdot = bigdot
@@ -48,10 +48,11 @@ class GPUOperation(Operation):
         for bid in matrix.blocks:
             matrix.type = 'gpu'
             if dense == False:
-                matrix.blocks[bid] = cusparse.CSR.to_CSR(matrix.blocks[bid])
-                matrix.blocks_t[bid] = cusparse.CSR.to_CSR(matrix.blocks[bid].T)
+                m_cpu = matrix.blocks[bid]
+                matrix.blocks[bid] = cusparse.CSR.to_CSR(m_cpu)
+                matrix.blocks_t[bid] = cusparse.CSR.to_CSR(m_cpu.T)
             else:
-                matrix.blocks[bid] = togpu(matrix.blocks[bid])
+                matrix.blocks[bid] = togpu(matrix.blocks[bid], dtype=self.dtype)
     
     def from_gpu(self, matrix, dense=True):
         for bid in matrix.blocks:
@@ -60,7 +61,7 @@ class GPUOperation(Operation):
     def get_dynamic(self, matrix, transa='N', key=None):
         if matrix.swap == True:
             X = matrix.get(transa=transa, key=key)
-            return togpu(X)
+            return togpu(X, dtype=self.dtype)
         else:
             return matrix.get(transa=transa, key=key)
         
@@ -81,7 +82,7 @@ class GPUContext(Context):
         self.dot = dot
         self.bigdot = bigsparse
         self.operation = GPUOperation(self.rank, self.rev_map, 
-            self.iblock_map, self.jblock_map, self.tblock_map, _bigdot, kernel)
+            self.iblock_map, self.jblock_map, self.tblock_map, _bigdot, kernel, self.dtype)
     
     def set_matrix(self, X, bid, key, dim):
         if key not in self.storage:
