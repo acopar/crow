@@ -7,7 +7,6 @@ import traceback
 import subprocess
 import argparse
 
-from crow.config import *
 from crow.convert.csv import *
 from crow.utils import *
 

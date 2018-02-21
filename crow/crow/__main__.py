@@ -11,7 +11,6 @@ import simplejson as json
 from mpi4py import MPI
 import atexit
 
-from crow.config import *
 from crow.utils import *
 from crow.preprocess import factors, procdata, blockmap
 from crow.core import finalize, factorize
@@ -42,7 +41,7 @@ def mpiexec(rank, params):
 
 
 def main():
-    parser = argparse.ArgumentParser(version=VERSION, description='Crow')
+    parser = argparse.ArgumentParser(version='0.2', description='Crow')
     parser.add_argument("-a", "--arguments", default='', help='Pass arguments in key=value pairs separated with commas (deprecated, use -k1 and -k2 instead)')
     parser.add_argument("-b", "--blocks", help="Block configuration (default 1x1)", default='1x1')
     parser.add_argument("-d", "--double", help='Double precision', action="store_true")
@@ -64,6 +63,10 @@ def main():
     parser.add_argument("-p", "--parallel", type=int, default=None, help='Parallelization degree (default: number of blocks)')
     parser.add_argument("-s", "--sparse", help="Run sparse", action="store_true")
     parser.add_argument("-t", "--stop", help='Stopping criteria', default='')
+    
+    parser.add_argument('--data-dir', default='data/', help='specify data directory')
+    parser.add_argument('--cache-dir', default='cache/', help='specify cache directory')
+    parser.add_argument('--results-dir', default='results/', help='specify results directory')
     
     # Debugging flags
     parser.add_argument("-V", "--Verbose", help='Verbosity', action="store_true")
@@ -89,7 +92,7 @@ def main():
         
         for ext in exts:
             data_base = '%s%s' % (os.path.basename(data_file), ext)
-            data_file2 = to_path(DATA, data_base)
+            data_file2 = to_path(args.data_dir, data_base)
             if os.path.isfile(data_file2):
                 data_file = data_file2
                 break
@@ -129,13 +132,17 @@ def main():
         'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': rulefile, 
         'init': args.init, 'imbalanced': args.imbalanced, 'sync': sync, 'seed': args.seed,
         'verbose': args.Verbose, 'force': args.force, 'double': args.double,
-        'output_folder': to_path(RESULTS, 'history', data_label, rulefile, args.k1),
+        'cache_folder': args.cache_dir, 'results_folder': args.results_dir,
+        'output_folder': to_path(args.results_dir, 'history', data_label, rulefile, args.k1),
         'data_file': data_file, 'stop': args.stop}
     
     run_wrapper(params)
 
 
 def run_wrapper(params, merge=True):
+    CACHE = params['cache_folder']
+    RESULTS = params['results_folder']
+    
     factor_cache = to_path(CACHE, 'factors')
     blockmap_file = to_path(CACHE, 'index', 'index.pkl')
     
@@ -146,8 +153,8 @@ def run_wrapper(params, merge=True):
     data_folder = get_cache_folder(data_file, cache_folder)
     
     factor_folder = to_path(RESULTS, 'factors')
-    output_folder = to_path(STORAGE, 'latest')
-    results_folder = to_path(output_folder, 'storage')
+    output_folder = to_path(CACHE, 'storage') # gets overriden
+    results_folder = params['results_folder']
     
     template = {'blocks': (1,1), 'sparse': False, 'max_iter': 100, 'context': 'cpu', 'sync': True,
         'arguments': 'k=20,l=20', 'parallel': 1, 'rulefile': 'nmtf_long', 'init': 'random', 

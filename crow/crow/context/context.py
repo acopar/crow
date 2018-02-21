@@ -1,7 +1,6 @@
 from crow.utils import Timer
 from crow.transfer.cputransfer import cpu_reduce
 from crow.utils import *
-from crow.config import *
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -522,4 +521,6 @@ class Context(object):
                         print '%d:' % it, np.float64(err)
                         
         return h
+
+
         

@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from crow.utils import *
-from crow.config import *
 from crow.convert.csv import *
 
 def merge_and_test(params):
@@ -62,15 +61,15 @@ def merge_and_test(params):
         new_factors[key] = X
     
     dump_file(ffile, (dimensions, new_factors))
-    factordict_to_npz(ffile)
+    factordict_to_npz(ffile, factor_folder)
     measure_error(params)
 
 
-def factordict_to_npz(filename):
+def factordict_to_npz(filename, factor_folder):
     dimensions, new_factors = load_file(filename)
     for key in new_factors:
         factor = new_factors[key]
-        filename = to_path(RESULTS, '%s.npz' % key)
+        filename = to_path(factor_folder, '%s.npz' % key)
         save_numpy(filename, factor)
 
 def measure_error(params):
