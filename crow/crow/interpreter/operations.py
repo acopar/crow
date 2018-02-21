@@ -292,7 +292,7 @@ class Operation(object):
                     self.sync_only()
                     self.send(A[bid], dev[b])
                 else:
-                    kmp = self.zeros_function(*output.shape)
+                    kmp = self.zeros_function(*output.shape, dtype=self.dtype)
                     kmp += A[bid]
                     A[b] = kmp
         else:
@@ -327,7 +327,7 @@ class Operation(object):
             kmp = None
             output = A[bid]
             if len(device_list) > 0:
-                kmp = self.zeros_function(*output.shape)
+                kmp = self.zeros_function(*output.shape, dtype=self.dtype)
             
             for b in device_list:
                 if dev[b] != dev[source]:
@@ -349,7 +349,7 @@ class Operation(object):
         
         if dev == 0:
             output = A[bid]
-            kmp = self.zeros_function(*output.shape)
+            kmp = self.zeros_function(*output.shape, dtype=self.dtype)
             for d in device_list:
                 self.recv(kmp, d)
                 output += kmp

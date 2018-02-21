@@ -6,10 +6,10 @@ RUN apt-get update -y && apt-get install -y git vim sudo openssh-server python-p
     python-virtualenv gcc gfortran binutils python-dev libffi-dev libzmq3-dev locate
 
 # compile openmpi with cuda support
-RUN wget https://www.open-mpi.org/software/ompi/v3.0/downloads/openmpi-3.0.0.tar.gz
-#RUN wget https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.0.tar.gz
-RUN tar xzf openmpi-3.0.0.tar.gz
-WORKDIR /openmpi-3.0.0
+#RUN wget https://www.open-mpi.org/software/ompi/v3.0/downloads/openmpi-3.0.0.tar.gz
+RUN wget https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.0.tar.gz
+RUN tar xzf openmpi-2.0.0.tar.gz
+WORKDIR /openmpi-2.0.0
 RUN ./configure --with-cuda=/usr/local/cuda --prefix=/openmpi
 RUN make -j$(nproc) && make install
 # for cpu only environments
@@ -80,10 +80,6 @@ USER ${USERNAME}
 
 ENV SSHDIR ${HOME}/.ssh/
 RUN mkdir -p ${SSHDIR}
-
-# Uncomment this to simplify automatic connections with other containers
-# RUN echo "StrictHostKeyChecking no" >> ${SSHDIR}/config
-# RUN echo "UserKnownHostsFile /dev/null" >> ${SSHDIR}/config
 
 # Prepare virtual environment and install crow
 WORKDIR ${HOME}
