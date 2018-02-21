@@ -4,13 +4,13 @@ crow-set-uid
 crow-set-sshkey
 
 context=$1
-runtime=""
+runtime='--runtime='
 
 if [[ "$context" == "cpu" ]]; then
     # Force CPU-only
-    runtime=""
+    runtime='--runtime='
 elif [[ "$context" == "gpu" || -e /dev/nvidiactl ]]; then
-    runtime="--runtime=nvidia"
+    runtime='--runtime=nvidia'
 fi
 
 existing=$(docker ps -a -q --filter name="^/crow$")
@@ -30,5 +30,5 @@ if [ ! -d results ]; then
 fi
 
 
-docker run -d "$runtime" --name="crow" -p 22 -v $PWD/crow:/home/crow/crow -v $PWD/data:/home/crow/data:ro -v $PWD/cache:/home/crow/cache -v $PWD/results:/home/crow/results --rm acopar/crow
+docker run -d $runtime --name="crow" -p 22 -v $PWD/crow:/home/crow/crow -v $PWD/data:/home/crow/data:ro -v $PWD/cache:/home/crow/cache -v $PWD/results:/home/crow/results --rm acopar/crow
 
