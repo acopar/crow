@@ -27,6 +27,9 @@ def load_kernel():
     Z = gpuzeros(10,10)
     kernel(X, Y, Z)
     kernel_lin(X, Y, Z)
+    X = gpuzeros(10, 10, dtype=np.float64)
+    kernel(X, Y, Z)
+    kernel_lin(X, Y, Z)
 
 ### Dynamic functions ###
 
@@ -43,9 +46,11 @@ def multiply(A, B, C):
 def divide_safe(A, B, C):
     if B.shape[0] == 1:
         D = np.divide(A.get(), B.get() + EPSILON)
-        C = togpu(D)
+        C = togpu(D, dtype=A.dtype)
     else:
         #C = skcuda.misc.divide(A, B)
+        if A.dtype == np.float64:
+            Dkern_div(A, B, C)
         kern_div(A, B, C)
     
     return C
@@ -57,16 +62,22 @@ def axis_sum(X, C, transa='N'):
         return skcuda.misc.sum(X, axis=0, out=C)
 
 def kernel(A, B, C, transa='N'):
+    func = kern
+    if A.dtype == np.float64:
+        func = Dkern
     if transa == 'T':
-        kern(linalg.transpose(A), B, C)
+        func(linalg.transpose(A), B, C)
     else:
-        kern(A, B, C)
+        func(A, B, C)
 
 def kernel_lin(A, B, C, transa='N'):
+    func = kern_lin
+    if A.dtype == np.float64:
+        func = Dkern_lin
     if transa == 'T':
-        kern_lin(linalg.transpose(A), B, C)
+        func(linalg.transpose(A), B, C)
     else:
-        kern_lin(A, B, C)
+        func(A, B, C)
 
 def transpose(A):
     return linalg.transpose(A)
@@ -81,7 +92,7 @@ def sum_all(A, C):
     e = A.get().sum()
     C = C.get()
     C[0,0] = e
-    C = togpu(C)
+    C = togpu(C, dtype=A.dtype)
     return C
 
 def sqrt(A, C):
@@ -92,7 +103,37 @@ def trace(A, C):
     trace = skcuda.linalg.trace(A)
     C = C.get()
     C[0,0] = trace
-    C = togpu(C)
+    C = togpu(C, dtype=A.dtype)
+    return C
+
+def project(A, C, transa='N'):
+    MAXILON = 10**(9)
+    A = A.get()
+    A[np.where(A < 0)] = 0
+    A[np.where(A > MAXILON)] = MAXILON
+    return togpu(A, dtype=A.dtype)
+
+def inverse(A, C):
+    A = A.get()
+    A = np.nan_to_num(A)
+    try:
+        X = la.inv(A)
+        X = np.nan_to_num(X)
+        return togpu(X, dtype=A.dtype)
+    except la.LinAlgError:
+        print("Warning: singular matrix")
+        X = la.pinv(A)
+        X = np.nan_to_num(X)
+        return togpu(X, dtype=A.dtype)
+
+def norm2(A, C):
+    if type(A) == cusparse.CSR:
+        Acpu = A.get()
+        XX = Acpu.power(2)
+        C = togpu(np.array(XX.sum()).reshape(1,1), dtype=A.dtype)
+    else:
+        XX = skcuda.misc.multiply(A, A).get()
+        C = togpu(np.array(XX.sum()).reshape(1,1), dtype=A.dtype)
     return C
 
 FUNCTIONS = {
@@ -107,4 +148,7 @@ FUNCTIONS = {
     'kernel_lin': kernel_lin,
     '_sqrt': sqrt,
     '_trace': trace,
+    '_project': project,
+    '_inverse': inverse,
+    '_norm2': norm2,
 }

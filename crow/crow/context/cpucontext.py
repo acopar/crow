@@ -13,8 +13,8 @@ import os
 import psutil
 
 class CPUOperation(Operation):
-    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, bigdot, kernel):
-        super(CPUOperation,self).__init__(rank, rev_map, iblock_map, jblock_map, tblock_map)
+    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, bigdot, kernel, dtype):
+        super(CPUOperation,self).__init__(rank, rev_map, iblock_map, jblock_map, tblock_map, dtype)
             
         self.dot = dot
         self.bigdot = bigdot
@@ -55,7 +55,7 @@ class CPUContext(Context):
             _bigdot = dot
 
         self.operation = CPUOperation(self.rank, self.rev_map, 
-            self.iblock_map, self.jblock_map, self.tblock_map, _bigdot, kernel)
+            self.iblock_map, self.jblock_map, self.tblock_map, _bigdot, kernel, self.dtype)
     
     def set_matrix(self, X, bid, key, dim):
         if key not in self.storage:

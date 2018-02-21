@@ -92,7 +92,7 @@ def wrap_sync(func):
     return new_f
 
 class Operation(object):
-    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, sync=True):
+    def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, dtype, sync=True):
         self.__dict__.update(locals())
         self.__dict__.pop('self', None)
         self.dot_mapper = {
@@ -121,6 +121,7 @@ class Operation(object):
             'nkn': self.dot_nkn
         }
         self.it = 0
+        self.dtype = dtype
         self.sync_flag = sync
     
     def get_dynamic(self, matrix, transa='N', key=None):
@@ -190,7 +191,8 @@ class Operation(object):
     
     @wrap_level1
     def inverse(self, A, C, transa='N', pos=None):
-        C.set(self._inverse(A.get(), C.get()))
+        if self.bid == (0,0):
+            C.set(self._inverse(A.get(), C.get()))
     
     @wrap_level1
     def norm1(self, A, C, transa='N', pos=None):
@@ -198,7 +200,7 @@ class Operation(object):
        
     @wrap_level1 
     def norm2(self, A, C, transa='N', pos=None):
-        raise Exception("Unimplemented norm2")
+        C.set(self._norm2(A.get(), C.get()))
     
     @wrap_level1
     def trace(self, A, C, transa='N', pos=None):
@@ -398,12 +400,14 @@ class Operation(object):
         for bid in self.blocks:
             if type(x) == type({}):
                 xb = x[bid]
+            
+            if type(y) == type({}):
                 yb = y[bid]
             
             if m is None:
-                m = Matrix(self.zeros_function(xb, yb), key=bid)
+                m = Matrix(self.zeros_function(xb, yb, dtype=self.dtype), key=bid)
             else:
-                m.append(self.zeros_function(xb, yb), key=bid)
+                m.append(self.zeros_function(xb, yb, dtype=self.dtype), key=bid)
         return m
 
     def ones(self, x, y=0):
@@ -416,9 +420,9 @@ class Operation(object):
                 yb = y[bid]
             
             if m is None:
-                m = Matrix(self.ones_function(xb, yb), key=bid)
+                m = Matrix(self.ones_function(xb, yb, dtype=self.dtype), key=bid)
             else:
-                m.append(self.ones_function(xb, yb), key=bid)
+                m.append(self.ones_function(xb, yb, dtype=self.dtype), key=bid)
         return m
     
     def number(self, x):
@@ -429,9 +433,9 @@ class Operation(object):
                 xb = x[bid]
             
             if m is None:
-                m = Matrix(self.number_function(xb), key=bid)
+                m = Matrix(self.number_function(xb, dtype=self.dtype), key=bid)
             else:
-                m.append(self.number_function(xb), key=bid)
+                m.append(self.number_function(xb, dtype=self.dtype), key=bid)
         return m
     
     def block_zeros(self, dim_x, dim_y, block_map, model='ij'):
@@ -447,7 +451,7 @@ class Operation(object):
                 y = dim_y
             
             if mat == None:
-                mat = Matrix(self.zeros_function(x, y), key=bid, model=model)
+                mat = Matrix(self.zeros_function(x, y, dtype=self.dtype), key=bid, model=model)
             else:
-                mat.append(self.zeros_function(x, y), key=bid)
+                mat.append(self.zeros_function(x, y, dtype=self.dtype), key=bid)
         return mat

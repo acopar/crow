@@ -1,20 +1,24 @@
 import numpy as np
 
+#dtype = np.float64
 ### Initialization procedures ###
-def nprandom(x, y, seed=0):
+def nprandom(x, y, seed=0, dtype=np.float32):
     np.random.seed(seed)
     X = np.random.rand(x, y)
-    X = np.array(X, dtype=np.float32, order='C')
+    X = np.array(X, dtype=dtype, order='C')
     return X
 
-def tri_initialize(d, seed=0):
+def zeros(x, y, seed=0, dtype=np.float32):
+    return np.array(np.zeros((x, y)), dtype=dtype, order='C')
+
+def tri_initialize(d, seed=0, dtype=np.float32):
     np.random.seed(seed)
     U = np.random.rand(d['n'],d['k'])
     S = np.random.rand(d['k'],d['l'])
     V = np.random.rand(d['m'],d['l'])
-    U = np.array(U, dtype=np.float32, order='C')
-    V = np.array(V, dtype=np.float32, order='C')
-    S = np.array(S, dtype=np.float32, order='C')
+    U = np.array(U, dtype=dtype, order='C')
+    V = np.array(V, dtype=dtype, order='C')
+    S = np.array(S, dtype=dtype, order='C')
     return U, S, V
 
 def column_average(X, vertical='N', many=20):

@@ -63,6 +63,11 @@ class Context(object):
         self.prev = None
         self.now = None
         self.lazy = False
+        self.dtype = np.float32
+        if flags['double']:
+            self.dtype = np.float64
+        
+        np.random.seed(42)
         
         self.max_iter = config['max_iter']
         self.balanced = True
@@ -102,7 +107,7 @@ class Context(object):
         
         if len(self.block_map[0]) > 1 and config['context'] == 'gpu':
             self.lazy = True
-            print "Lazy made activated"
+            print "Lazy mode activated"
     
     def get_blocks(self):
         return self.block_map[0]
@@ -180,6 +185,8 @@ class Context(object):
                             filename = to_path(self.data_folder, 'i%d_%d.npz' % (idx, jdx))
                     
                     X = self.load_data(filename, self.dense)
+                    if self.dtype == np.float64:
+                        X = X.astype(np.float64)
                     self.set_matrix(X, bid, v, sizes[v])
             
             factor_file = to_path(self.factor_folder, '%d_%d.pkl' % (idx, jdx))
@@ -217,7 +224,7 @@ class Context(object):
         return X
     
     def save(self, output, results, data):
-        if not output is None:
+        if not output is None and self.rank == 0:
             dump_file(output, data)
         
         output_vars = self.factor_vars + self.error_vars
@@ -257,9 +264,29 @@ class Context(object):
         if self.stop == 'e7':
             if np.abs(self.prev - self.now) < 10**(-7):
                 return True
+        
+        if self.stop == 'd3':
+            if 10**(-3) * np.abs(self.now) - np.abs(self.prev - self.now) > 0:
+                return True
+        
+        if self.stop == 'd4':
+            if 10**(-4) * np.abs(self.now) - np.abs(self.prev - self.now) > 0:
+                return True
+        
+        if self.stop == 'd5':
+            if 10**(-5) * np.abs(self.now) - np.abs(self.prev - self.now) > 0:
+                return True
+        
+        if self.stop == 'd6':
+            if 10**(-6) * np.abs(self.now) - np.abs(self.prev - self.now) > 0:
+                return True
+                
+        if self.stop == 'd7':
+            if 10**(-7) * np.abs(self.now) - np.abs(self.prev - self.now) > 0:
+                return True
+        
         self.prev = self.now
     
-
     @factorization
     def run_nmtf_long(self, X=None, U=None, S=None, V=None, E=None, n=None, 
         m=None, k=None, l=None, debug=None, print_err=False):
@@ -300,10 +327,7 @@ class Context(object):
             print "Memory consumption %d MB" % MC.fetch()
         
         if print_err:
-            for bid in o.blocks:
-                x = X.fetch(key=bid)
-                NM8 = np.multiply(x, x)
-                AA5.set(o.number_function(NM8.sum()), key=bid)
+            o.norm2(X, AA5)
             o.reduce_(AA5, 'ij')
         
         for it in range(self.max_iter):
@@ -324,16 +348,6 @@ class Context(object):
             
             if it == 2:
                 self.timer.split('main')
-            
-            if print_err:
-                if self.rank == 0:
-                    e = E.fetch(key=(0,0))
-                    err = e[0,0]
-                    if it == 0:
-                        print "Frobenius norm at iteration:"
-                    else:
-                        print '%d:' % it, float(err)
-                        h.append(err)
             
             o.sync_(V, 'j')
             o.dot_wrapper('nmk', X, V, NL10)
@@ -377,6 +391,16 @@ class Context(object):
             o.dot_wrapper('kkk', KL28, LL33, KL34)
             o.kernel_wrapper_lin('kk', KL32, KL34, S)
 
+            if print_err:
+                if self.rank == 0:
+                    e = E.fetch(key=(0,0))
+                    err = e[0,0]
+                    h.append(err)
+                    if it == 0:
+                        print "Frobenius norm at iteration:"
+                    else:
+                        print '%d:' % it, np.float64(err)
+
         return h
 
     @factorization
@@ -419,11 +443,9 @@ class Context(object):
             print "Memory consumption %d MB" % MC.fetch()
         
         if print_err:
-            for bid in o.blocks:
-                x = X.fetch(key=bid)
-                NM8 = np.multiply(x, x)
-                AA5.set(o.number_function(NM8.sum()), key=bid)
+            o.norm2(X, AA5)
             o.reduce_(AA5, 'ij')
+        
         
         for it in range(self.max_iter):
             o.it = it
@@ -444,15 +466,6 @@ class Context(object):
             if it == 2:
                 self.timer.split('main')
             
-            if print_err:
-                if self.rank == 0:
-                    e = E.fetch(key=(0,0))
-                    err = e[0,0]
-                    if it == 0:
-                        print "Frobenius norm at iteration:"
-                    else:
-                        print '%d:' % it, float(err)
-                        h.append(err)
             
             o.sync_(V, 'j')
             o.dot_wrapper('nmk', X, V, NL10)
@@ -497,6 +510,16 @@ class Context(object):
             o.dot_wrapper('kkk', KK32, S, KL34)
             o.dot_wrapper('kkk', KL34, LL33, KL35)
             o.kernel_wrapper('kk', KL31, KL35, S)
+                        
+            if print_err:
+                if self.rank == 0:
+                    e = E.fetch(key=(0,0))
+                    err = e[0,0]
+                    h.append(err)
+                    if it == 0:
+                        print "Frobenius norm at iteration:"
+                    else:
+                        print '%d:' % it, np.float64(err)
                         
         return h
         

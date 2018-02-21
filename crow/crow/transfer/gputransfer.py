@@ -8,27 +8,27 @@ from mpi4py import MPI
 EPSILON = 10**(-9)
 
 comm = MPI.COMM_WORLD
-
+#dtype = np.float64
 ### GPU convenience functions ###
 
-def gpuzeros(n, m, slices=None):
-    return gpuarray.zeros((n, m), dtype=np.float32, order='F')
+def gpuzeros(n, m, slices=None, dtype=np.float32):
+    return gpuarray.zeros((n, m), dtype=dtype, order='F')
 
-def gpuzero_slices(slices, k):
-    return [gpuzeros(b-a, k) for a,b in slices]
+def gpuzero_slices(slices, k, dtype=np.float32):
+    return [gpuzeros(b-a, k, dtype=dtype) for a,b in slices]
 
-def gpuones(n, m):
-    return togpu(np.ones((n,m)))
+def gpuones(n, m, dtype=np.float32):
+    return togpu(np.ones((n,m), dtype=dtype))
 
-def gpunumber(x):
-    return togpu(np.zeros((1,1)) + x)
+def gpunumber(x, dtype=np.float32):
+    return togpu(np.zeros((1,1), dtype=dtype) + x)
 
-def gpuzeros_like(X):
+def gpuzeros_like(X, dtype=np.float32):
     n, m = X.shape
-    return gpuarray.zeros((n, m), dtype=np.float32, order='F')
+    return gpuarray.zeros((n, m), dtype=dtype, order='F')
 
-def togpu(X):
-    X = np.array(X, dtype=np.float32, order='F')
+def togpu(X, dtype=np.float32):
+    X = np.array(X, dtype=dtype, order='F')
     return gpuarray.to_gpu(X)
 
 def sync_only():
@@ -42,7 +42,7 @@ def gpu_reduce(rank, device_list, output, source=0):
     if rank == source:
         kmp = None
         if len(device_list) > 0:
-            kmp = gpuzeros(*output.shape)
+            kmp = gpuzeros(*output.shape, dtype=output.dtype)
         for b in device_list:
             gpu_recv(kmp, b)
             output += kmp
@@ -92,6 +92,21 @@ kern_lin = ElementwiseKernel(
 
 kern_div = ElementwiseKernel(
         "float *x, float *y, float *z",
+        code_div,
+        "kern_div")
+
+Dkern = ElementwiseKernel(
+        "double *x, double *y, double *z",
+        code,
+        "kern")
+
+Dkern_lin = ElementwiseKernel(
+        "double *x, double *y, double *z",
+        code_lin,
+        "kern_lin")
+
+Dkern_div = ElementwiseKernel(
+        "double *x, double *y, double *z",
         code_div,
         "kern_div")
 

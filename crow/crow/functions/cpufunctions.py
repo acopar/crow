@@ -1,4 +1,6 @@
 import numpy as np
+import scipy.linalg as la
+from scipy.sparse import csr_matrix
 from crow.transfer.cputransfer import *
 
 ### Selective functions ###
@@ -32,8 +34,18 @@ def kernel(A, B, C, transa='N'):
     return C
 
 
+#def divide(A, B, C):
+#    np.divide(A, (B + EPSILON), out=C)
+#    return C
+
 def divide(A, B, C):
-    np.divide(A, (B + EPSILON), out=C)
+    EPSILON = 10**(-9)
+    if np.isscalar(B):
+        if B < EPSILON:
+            B = EPSILON
+    else:
+        B[np.where(B < EPSILON)] = EPSILON
+    np.divide(A, B, out=C)
     return C
 
 def kernel_lin(A, B, C, transa='N'):
@@ -80,6 +92,34 @@ def trace(A, C):
     C = np.trace(A)
     return C
 
+def project(A, C, transa='N'):
+    MAXILON = 10**(9)
+    A[np.where(A < 0)] = 0
+    A[np.where(A > MAXILON)] = MAXILON
+    return A
+
+
+def inverse(A, C):
+    A = np.nan_to_num(A)
+    try:
+        X = la.inv(A)
+        X = np.nan_to_num(X)
+        return X
+    except la.LinAlgError:
+        print("Warning: singular matrix")
+        X = la.pinv(A)
+        X = np.nan_to_num(X)
+        return X
+
+def norm2(A, C):
+    if type(A) == csr_matrix:
+        XX = A.power(2)
+        C[0,0] = XX.sum()
+    else:
+        XX = np.multiply(A, A)
+        C[0,0] = np.sum(XX)
+    return C
+    
 FUNCTIONS = {
     '_multiply': multiply,
     '_divide': divide,
@@ -91,5 +131,8 @@ FUNCTIONS = {
     'kernel': kernel,
     'kernel_lin': kernel_lin,
     '_sqrt': sqrt,
-    '_trace': trace
+    '_trace': trace,
+    '_project': project,
+    '_inverse': inverse,
+    '_norm2': norm2,
 }
