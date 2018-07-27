@@ -7,7 +7,7 @@ from crow.interpreter.operations import *
 from crow.transfer.cputransfer import *
 from crow.functions.cpufunctions import *
 
-from context import Context
+from crow.context.context import Context
 
 import os
 import psutil

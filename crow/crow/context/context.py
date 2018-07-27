@@ -107,6 +107,16 @@ class Context(object):
         if len(self.block_map[0]) > 1 and config['context'] == 'gpu':
             self.lazy = True
             print "Lazy mode activated"
+        
+        if self.rank == 0:
+            cache_folder = config['cache_folder']
+            if not cache_folder is None:
+                for p in self.params:
+                    if p['type'] == 'data':
+                        continue
+                    key = p['name']
+                    storage_folder = to_path(cache_folder, 'factors', key)
+                    ensure_dir_exact(storage_folder)
     
     def get_blocks(self):
         return self.block_map[0]
@@ -186,6 +196,8 @@ class Context(object):
                     X = self.load_data(filename, self.dense)
                     if self.dtype == np.float64:
                         X = X.astype(np.float64)
+                    if self.dtype == np.float32:
+                        X = X.astype(np.float32)
                     self.set_matrix(X, bid, v, sizes[v])
             
             factor_file = to_path(self.factor_folder, '%d_%d.pkl' % (idx, jdx))
@@ -222,21 +234,37 @@ class Context(object):
             X = csr_matrix(Xd)
         return X
     
-    def save(self, output, results, data):
+    def save(self, output, cache_folder, data):
         if not output is None and self.rank == 0:
             dump_file(output, data)
         
         output_vars = self.factor_vars + self.error_vars
-        results_folder = results
-        if not results_folder is None:
+        if not cache_folder is None:
             for key in output_vars:
-                storage_folder = to_path(results_folder, key)
+                storage_folder = to_path(cache_folder, 'factors', key)
                 for bid in self.storage[key].blocks:
                     storage_out = to_path(storage_folder, '%d_%d.pkl' % (bid[0], bid[1]))
                     dump_file(storage_out, self.storage[key].get(key=bid))
+
+    def check_lastN(self, history, EPS, N):
+        if len(history) > N:
+            last5 = history[-N:]
+            condition = False
+            for i in range(1,N):
+                prev = last5[i-1]
+                now = last5[i]
+                #print i, prev, now
+                
+                if EPS * np.abs(now) - np.abs(prev - now) > 0:
+                    condition = True
+                else:
+                    condition = False
+                    break
+            if condition == True:
+                return True
+        
     
-    
-    def check_stop(self, E=None):
+    def check_stop(self, E=None, history=None):
         if self.stop == None:
             return False
     
@@ -283,8 +311,33 @@ class Context(object):
         if self.stop == 'd7':
             if 10**(-7) * np.abs(self.now) - np.abs(self.prev - self.now) > 0:
                 return True
+
+        if self.stop == 'p5-5':
+            if self.check_lastN(history, 10**(-5), 6):
+                return True
+        
+        if self.stop == 'p5-10':
+            if self.check_lastN(history, 10**(-5), 11):
+                return True
+        
+        if self.stop == 'p6-5':
+            if self.check_lastN(history, 10**(-6), 6):
+                return True
+        
+        if self.stop == 'p6-10':
+            if self.check_lastN(history, 10**(-6), 11):
+                return True
+        
+        if self.stop == 'p7-5':
+            if self.check_lastN(history, 10**(-7), 6):
+                return True
+        
+        if self.stop == 'p7-10':
+            if self.check_lastN(history, 10**(-7), 11):
+                return True
         
         self.prev = self.now
+        return False
     
     @factorization
     def run_nmtf_long(self, X=None, U=None, S=None, V=None, E=None, n=None, 
@@ -331,14 +384,16 @@ class Context(object):
         
         for it in range(self.max_iter):
             o.it = it
-            if self.rank == 0 and self.check_stop(E=E):
+            if self.rank == 0 and self.check_stop(E=E, history=h):
                 notify = o.number(1)
-                o.sync_(notify, 'i')
-                o.sync_(notify, 'j')
                 self.number_of_iterations = it
+
+            o.sync_(notify, 'i')
+            o.sync_(notify, 'j')
                 
             if notify.fetch()[0,0] == 1:
-                print "Stopping criteria reached after %d iterations" % it
+                if self.rank == 0:
+                    print "Stopping criteria reached after %d iterations" % it
                 break
             
             if it == 2 and self.sync == False:
@@ -448,14 +503,16 @@ class Context(object):
         
         for it in range(self.max_iter):
             o.it = it
-            if self.rank == 0 and self.check_stop(E=E):
+            if self.rank == 0 and self.check_stop(E=E, history=h):
                 notify = o.number(1)
-                o.sync_(notify, 'i')
-                o.sync_(notify, 'j')
                 self.number_of_iterations = it
+
+            o.sync_(notify, 'i')
+            o.sync_(notify, 'j')
                 
             if notify.fetch()[0,0] == 1:
-                print "Stopping criteria reached after %d iterations" % it
+                if self.rank == 0:
+                    print "Stopping criteria reached after %d iterations" % it 
                 break
             
             if it == 2 and self.sync == False:

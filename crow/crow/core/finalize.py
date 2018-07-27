@@ -6,7 +6,7 @@ from crow.convert.csv import *
 def merge_and_test(params):
     factor_folder = params['factor_folder']
     rulefile = params['rulefile']
-    results_folder = params['results_folder']
+    cache_folder = params['cache_folder']
     block_config = params['blocks']
     
     matrices = [{'type': 'data', 'name': 'X', 'size': 'nm'}, {'type': 'factor', 'name': 'U', 'size': 'nk'}, 
@@ -34,11 +34,13 @@ def merge_and_test(params):
     
     storage = {}
     for key in matrix_list:
-        storage_folder = to_path(results_folder, key)
+        storage_folder = to_path(cache_folder, 'factors', key)
         storage[key] = {}
         for bid in block_mask.keys():
             storage_out = to_path(storage_folder, '%d_%d.pkl' % (bid[0], bid[1]))
             storage[key][bid] = load_file(storage_out)
+            remove(storage_out)
+        remove(storage_folder)
     
     new_factors = {}
     for key in storage:
@@ -60,31 +62,20 @@ def merge_and_test(params):
             print 'Error loading %s' % key
         new_factors[key] = X
     
-    dump_file(ffile, (dimensions, new_factors))
-    factordict_to_npz(ffile, factor_folder)
-    measure_error(params)
-
-
-def factordict_to_npz(filename, factor_folder):
-    dimensions, new_factors = load_file(filename)
     for key in new_factors:
         factor = new_factors[key]
         filename = to_path(factor_folder, '%s.npz' % key)
         save_numpy(filename, factor)
-
-def measure_error(params):
-    cache_folder = params['data_folder']
-    factor_folder = params['factor_folder']
     
-    ffile = to_path(factor_folder, 'factors.pkl')
-    dimensions, storage = load_file(ffile)
     
-    U = storage['U']
-    S = storage['S']
-    V = storage['V']
-    E = storage['E']
-    err = E.sum()
-    if err != 0.0:
-        print 'Error function:', err
-
+    ## cleanup
+    
+    remove(ffile)
+    remove(sfile)
+    remove(params['blockmap_file'])
+    factor_cache = params['factor_cache']
+    for i in range(nb):
+        for j in range(mb):
+            fblock_file = to_path(factor_cache, '%d_%d.pkl' % (i,j))
+            remove(fblock_file)
     

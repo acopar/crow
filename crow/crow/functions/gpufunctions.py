@@ -136,6 +136,9 @@ def norm2(A, C):
         C = togpu(np.array(XX.sum()).reshape(1,1), dtype=A.dtype)
     return C
 
+def _togpu(A):
+    return togpu(A, dtype=A.dtype)
+
 FUNCTIONS = {
     '_multiply': multiply,
     '_divide': divide_safe,
@@ -151,4 +154,5 @@ FUNCTIONS = {
     '_project': project,
     '_inverse': inverse,
     '_norm2': norm2,
+    '_togpu': _togpu,
 }

@@ -13,8 +13,8 @@ WORKDIR /openmpi-2.0.0
 RUN ./configure --with-cuda=/usr/local/cuda --prefix=/openmpi
 RUN make -j$(nproc) && make install
 # for cpu only environments
-RUN ./configure --prefix=/openmpi-cpu
-RUN make -j$(nproc) && make install
+#RUN ./configure --prefix=/openmpi-cpu
+#RUN make -j$(nproc) && make install
 
 # compile openblas
 WORKDIR /
@@ -68,9 +68,6 @@ RUN mkdir /var/run/sshd
 RUN echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
 # Skipped for compatibility with automatic build && locale-gen
 
-# Set environment variables
-#RUN echo '. /etc/profile.d/crow.sh' >> /etc/bash.bashrc
-
 RUN echo 'export VISIBLE=now' >> /etc/profile.d/crow.sh
 RUN echo 'export PATH=/OpenBLAS/bin:/openmpi/bin:/usr/local/cuda/bin:$PATH' >> /etc/profile.d/crow.sh
 RUN echo 'export LD_LIBRARY_PATH="/OpenBLAS/lib:/openmpi/lib:$LD_LIBRARY_PATH"' >> /etc/profile.d/crow.sh
@@ -78,8 +75,8 @@ RUN echo 'export CUDA_ROOT=/usr/local/cuda' >> /etc/profile.d/crow.sh
 
 USER ${USERNAME}
 
-ENV SSHDIR ${HOME}/.ssh/
-RUN mkdir -p ${SSHDIR}
+#ENV SSHDIR ${HOME}/.ssh/
+#RUN mkdir -p ${SSHDIR}
 
 # Prepare virtual environment and install crow
 WORKDIR ${HOME}

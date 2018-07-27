@@ -16,8 +16,7 @@ from crow.preprocess import factors, procdata, blockmap
 from crow.core import finalize, factorize
 
 def nice_print(params):
-    dimensions = from_arguments(params['arguments'])
-    fact_rank = 'k1xk2 = %sx%s' % (dimensions['k'], dimensions['l']) 
+    fact_rank = 'k1xk2 = %sx%s' % (params['k1'], params['k2']) 
     method_name = '%s' % params['rulefile']
     if method_name == 'nmtf_long':
         method_name = 'Non-orthogonal NMTF (nmtf_long)'
@@ -41,7 +40,7 @@ def mpiexec(rank, params):
 
 
 def main():
-    parser = argparse.ArgumentParser(version='0.2', description='Crow')
+    parser = argparse.ArgumentParser(description='Crow')
     parser.add_argument("-a", "--arguments", default='', help='Pass arguments in key=value pairs separated with commas (deprecated, use -k1 and -k2 instead)')
     parser.add_argument("-b", "--blocks", help="Block configuration (default 1x1)", default='1x1')
     parser.add_argument("-d", "--double", help='Double precision', action="store_true")
@@ -111,29 +110,39 @@ def main():
     if args.method:
         rulefile = args.method
     
+    k1 = None
+    k2 = None
+    if args.k1 != None:
+        k1 = args.k1
+        if args.k2 != None:
+            k2 = args.k2
+        else:
+            k2 = args.k1
+    elif args.k2 != None:
+        k2 = args.k2
+        k1 = args.k2
+    else:
+        k1 = 10
+        k2 = 10
+    
     arguments = args.arguments
     if arguments == '':
-        if args.k1 != None:
-            arguments = 'k=%s' % args.k1
-            if args.k2 != None:
-                arguments = '%s,l=%s' % (arguments, args.k2)
-            else:
-                arguments = '%s,l=%s' % (arguments, args.k1)
-        elif args.k2 != None:
-            arguments = 'k=%s,l=%s' % (args.k2, args.k2)
-        else:
-            arguments = 'k=10,l=10'
+        arguments = 'k=%s,l=%s' % (k1, k2)
     
     sync = True
     if args.no_transfer:
         sync = False
     data_label = os.path.splitext(os.path.basename(data_file))[0]
-    params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'arguments': arguments, 
+    
+    ensure_dir_exact(args.results_dir)
+    
+    params = {'context': context, 'sparse': args.sparse, 'blocks': blocks, 'k1': k1, 'k2': k2,
+        'arguments': arguments, 
         'parallel': parallel, 'error': args.error, 'max_iter': args.max_iter, 'rulefile': rulefile, 
         'init': args.init, 'imbalanced': args.imbalanced, 'sync': sync, 'seed': args.seed,
         'verbose': args.Verbose, 'force': args.force, 'double': args.double,
         'cache_folder': args.cache_dir, 'results_folder': args.results_dir,
-        'output_folder': to_path(args.results_dir, 'history', data_label, rulefile, args.k1),
+        'output_folder': to_path(args.results_dir, 'history'),
         'data_file': data_file, 'stop': args.stop}
     
     run_wrapper(params)
@@ -152,12 +161,12 @@ def run_wrapper(params, merge=True):
     cache_folder = to_path(CACHE, 'data')
     data_folder = get_cache_folder(data_file, cache_folder)
     
-    factor_folder = to_path(RESULTS, 'factors')
+    factor_folder = to_path(RESULTS)
     output_folder = to_path(CACHE, 'storage') # gets overriden
     results_folder = params['results_folder']
     
-    template = {'blocks': (1,1), 'sparse': False, 'max_iter': 100, 'context': 'cpu', 'sync': True,
-        'arguments': 'k=20,l=20', 'parallel': 1, 'rulefile': 'nmtf_long', 'init': 'random', 
+    template = {'blocks': (1,1), 'sparse': False, 'max_iter': 100, 'context': 'cpu', 'sync': True, 'k1': 10, 'k2': 10,
+        'arguments': 'k=10,l=10', 'parallel': 1, 'rulefile': 'nmtf_long', 'init': 'random', 'seed': 42,
         'multiplier': 1, 'error': True, 'override': False, 'debug': None, 'test': False, 'imbalanced': False,
         'data_folder': data_folder, 'data_file': data_file, 'factor_folder': factor_folder, 
         'results_folder': results_folder, 'output_folder': output_folder, 'factor_cache': factor_cache,
@@ -197,8 +206,8 @@ def get_config(params):
         if params['parallel'] > 1 and params['sparse']:
             imbalanced = True
     
-    d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': 42, 'double': params['double'],
-        'sparse': params['sparse'], 'imbalanced': imbalanced, 'init': params['init'], 
+    d = {'nb': nb, 'mb': mb, 'max_iter': params['max_iter'], 'seed': params['seed'], 'double': params['double'],
+        'sparse': params['sparse'], 'imbalanced': imbalanced, 'init': params['init'], 'cache_folder': params['cache_folder'],
         'parallel': params['parallel'], 'context': context, 'multiplier': params['multiplier']}
     return d
 
@@ -225,7 +234,7 @@ def factor_init_module(params):
     # Generates factors
     # Partitions factors
     # factor_folder -> factor_cache
-    dimensions = from_arguments(params['arguments'])
+    dimensions = {'k': int(params['k1']), 'l': int(params['k2'])}
     cache_folder = params['data_folder']
     factor_folder = params['factor_folder']
     factor_cache = params['factor_cache']
@@ -271,7 +280,7 @@ def core():
     args = sys.argv[1:]
     params = json.loads(args[0])
     
-    dimensions = from_arguments(params['arguments'])
+    dimensions = {'k': int(params['k1']), 'l': int(params['k2'])}
     config = get_config(params)
     
     output_folder = params['output_folder']
@@ -279,7 +288,7 @@ def core():
     comm = MPI.COMM_WORLD
     output = None
     if output_folder:
-        output = to_path(output_folder, '%d.pkl' % comm.rank)
+        output = to_path(output_folder, '%d_%d.pkl' % (dimensions['k'], dimensions['l']))
     
     data_folder = params['data_folder']
     results_folder = params['results_folder']

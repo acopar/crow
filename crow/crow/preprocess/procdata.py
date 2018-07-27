@@ -101,6 +101,10 @@ def csv_todense(filename, pklname):
 def dense_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)]):
     pkl_sparse = to_path(data_folder, '1_1', '0_0.npz')
     data_abs = os.path.abspath(data_file)
+    if os.path.realpath(pkl_sparse) != data_abs:
+        if os.path.exists(pkl_sparse):
+            os.unlink(pkl_sparse)
+    
     if not os.path.exists(pkl_sparse):
         input_type = os.path.splitext(data_file)[1].replace('.', '')
         if input_type == 'coo':
@@ -116,6 +120,10 @@ def dense_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)]):
 def sparse_dataset_to_blocks(data_file, data_folder, blocks=[(2,1),(4,1)], balanced=True):
     pkl_sparse = to_path(data_folder, '1_1', 's0_0.npz')
     data_abs = os.path.abspath(data_file)
+    if os.path.realpath(pkl_sparse) != data_abs:
+        if os.path.exists(pkl_sparse):
+            os.unlink(pkl_sparse)
+    
     if not os.path.exists(pkl_sparse):
         input_type = os.path.splitext(data_file)[1].replace('.', '')
         if input_type == 'coo':

@@ -119,7 +119,10 @@ def norm2(A, C):
         XX = np.multiply(A, A)
         C[0,0] = np.sum(XX)
     return C
-    
+
+def _togpu(A):
+    return A
+
 FUNCTIONS = {
     '_multiply': multiply,
     '_divide': divide,
@@ -135,4 +138,5 @@ FUNCTIONS = {
     '_project': project,
     '_inverse': inverse,
     '_norm2': norm2,
+    '_togpu': _togpu,
 }

@@ -26,6 +26,12 @@ def ensure_dir_exact(d):
             print d
             raise e
 
+def remove(d):
+    if os.path.isfile(d):
+        os.remove(d)
+    if os.path.isdir(d):
+        os.rmdir(d)
+
 def load_file(filename):
     # load pickle file
     if os.path.isfile(filename) == False:

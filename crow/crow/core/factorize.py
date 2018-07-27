@@ -44,5 +44,5 @@ def run(inputs, outputs, config, dimensions, flags=None, max_repeat=1):
     
     out = outputs['output']
     if out:
-        c.save(out, outputs['results'], data)
+        c.save(out, config['cache_folder'], data)
     return data

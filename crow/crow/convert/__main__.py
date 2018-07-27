@@ -53,7 +53,7 @@ def validate_filepath(src):
             
 
 def main():
-    parser = argparse.ArgumentParser(version=VERSION, description='Crow converter')
+    parser = argparse.ArgumentParser(description='Crow converter')
     parser.add_argument("-i", "--input", help="Explicitly set input type")
     parser.add_argument("-o", "--output", help="Explicitly set output type")
     parser.add_argument("--header", help="Skip header line", action="store_true")

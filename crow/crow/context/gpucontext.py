@@ -14,7 +14,7 @@ from crow.transfer.cputransfer import npzeros
 from crow.transfer.gputransfer import *
 from cuda_cffi import cusparse
 
-from context import Context
+from crow.context.context import Context
 
 class GPUOperation(Operation):
     def __init__(self, rank, rev_map, iblock_map, jblock_map, tblock_map, bigdot, kernel, dtype):

@@ -1,5 +1,7 @@
+import sys
 import numpy as np
-from matrix import *
+from crow.interpreter.matrix import *
+from crow.utils import Timer
 
 class Position():
     def __init__(self, colA=None, colB=None, rowA=None, rowB=None):
@@ -455,3 +457,6 @@ class Operation(object):
             else:
                 mat.append(self.zeros_function(x, y, dtype=self.dtype), key=bid)
         return mat
+
+    def togpu(self, A, data):
+        A.set(self._togpu(data))
