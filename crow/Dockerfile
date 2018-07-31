@@ -43,6 +43,7 @@ ENV CUDA_ROOT "/usr/local/cuda"
 ENV NOTVISIBLE "in users profile"
 
 # install other dependencies
+RUN pip install --no-use-wheel scipy
 COPY ./requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
