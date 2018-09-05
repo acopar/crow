@@ -115,7 +115,7 @@ This application depends on yaml python module, which can be installed with ``pi
 
 ::
     
-    sudo pip install yaml
+    sudo pip install pyyaml
 
 
 or using the packages from your distribution.
